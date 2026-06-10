@@ -1,6 +1,6 @@
 package ch.corrcalc.lib.prep;
 
-import ch.corrcalc.lib.matrix.Matrix;
+import ch.corrcalc.lib.matrix.DoubleMatrix;
 
 /**
  * Removes every observation row that contains at least one NaN value
@@ -10,7 +10,7 @@ import ch.corrcalc.lib.matrix.Matrix;
 final class DropMissingRowsPreparer implements DataPreparer {
 
     @Override
-    public Matrix prepare(Matrix observations) {
+    public DoubleMatrix prepare(DoubleMatrix observations) {
         int n = observations.rows();
         int p = observations.cols();
         double[] src = observations.data();
@@ -43,6 +43,6 @@ final class DropMissingRowsPreparer implements DataPreparer {
                 }
             }
         }
-        return Matrix.columnMajor(result, kept, p);
+        return DoubleMatrix.columnMajor(result, kept, p);
     }
 }

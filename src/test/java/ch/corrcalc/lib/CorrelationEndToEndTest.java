@@ -2,7 +2,7 @@ package ch.corrcalc.lib;
 
 import ch.corrcalc.lib.correlation.Correlations;
 import ch.corrcalc.lib.io.CsvMatrixReader;
-import ch.corrcalc.lib.matrix.Matrix;
+import ch.corrcalc.lib.matrix.DoubleMatrix;
 import ch.corrcalc.lib.prep.DataPreparer;
 import ch.corrcalc.lib.prep.Preparers;
 import org.junit.jupiter.api.Test;
@@ -27,11 +27,11 @@ class CorrelationEndToEndTest {
                 3 6 3.5
                 4 8 2.0
                 """;
-        Matrix raw = new CsvMatrixReader()
+        DoubleMatrix raw = new CsvMatrixReader()
                 .read(new ByteArrayInputStream(file.getBytes(StandardCharsets.UTF_8)), 4, 3);
 
         DataPreparer preparation = Preparers.pipeline(Preparers.imputeMean(), Preparers.standardize());
-        Matrix corr = Correlations.pearson().calculate(preparation.prepare(raw));
+        DoubleMatrix corr = Correlations.pearson().calculate(preparation.prepare(raw));
 
         assertEquals(3, corr.rows());
         assertEquals(3, corr.cols());
@@ -56,10 +56,10 @@ class CorrelationEndToEndTest {
                 3 -3
                 5 -5
                 """;
-        Matrix raw = new CsvMatrixReader()
+        DoubleMatrix raw = new CsvMatrixReader()
                 .read(new ByteArrayInputStream(file.getBytes(StandardCharsets.UTF_8)), 4, 2);
 
-        Matrix corr = Correlations.pearson().calculate(Preparers.dropMissingRows().prepare(raw));
+        DoubleMatrix corr = Correlations.pearson().calculate(Preparers.dropMissingRows().prepare(raw));
 
         assertEquals(-1.0, corr.get(0, 1), 1e-12);
     }

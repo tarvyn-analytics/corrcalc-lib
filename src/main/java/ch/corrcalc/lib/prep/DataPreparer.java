@@ -1,6 +1,6 @@
 package ch.corrcalc.lib.prep;
 
-import ch.corrcalc.lib.matrix.Matrix;
+import ch.corrcalc.lib.matrix.DoubleMatrix;
 
 /**
  * A data preparation step transforming an observations matrix into a new one,
@@ -16,7 +16,7 @@ public interface DataPreparer {
      * @param observations an {@code n x p} matrix, one observation per row
      * @return the prepared matrix; always a new instance
      */
-    Matrix prepare(Matrix observations);
+    DoubleMatrix prepare(DoubleMatrix observations);
 
     /**
      * Returns a preparer applying this step first and {@code next} on its result.

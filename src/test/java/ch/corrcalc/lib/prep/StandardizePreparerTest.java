@@ -1,7 +1,7 @@
 package ch.corrcalc.lib.prep;
 
 import ch.corrcalc.lib.exception.InvalidInputException;
-import ch.corrcalc.lib.matrix.Matrix;
+import ch.corrcalc.lib.matrix.DoubleMatrix;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -13,13 +13,13 @@ class StandardizePreparerTest {
 
     @Test
     void prepare_AnyColumns_HaveZeroMeanAndUnitSampleVariance() {
-        Matrix input = Matrix.fromRows(new double[][]{
+        DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, 100},
                 {2, 250},
                 {3, 400},
                 {4, 550}
         });
-        Matrix result = preparer.prepare(input);
+        DoubleMatrix result = preparer.prepare(input);
 
         int n = result.rows();
         for (int j = 0; j < result.cols(); j++) {
@@ -41,12 +41,12 @@ class StandardizePreparerTest {
 
     @Test
     void prepare_ZeroVarianceColumn_BecomesAllZeros() {
-        Matrix input = Matrix.fromRows(new double[][]{
+        DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {5, 1},
                 {5, 2},
                 {5, 3}
         });
-        Matrix result = preparer.prepare(input);
+        DoubleMatrix result = preparer.prepare(input);
 
         for (int i = 0; i < result.rows(); i++) {
             assertEquals(0.0, result.get(i, 0), 0.0);
@@ -55,8 +55,8 @@ class StandardizePreparerTest {
 
     @Test
     void prepare_SingleRow_BecomesZeroWithoutDividingByZero() {
-        Matrix input = Matrix.fromRows(new double[][]{{7, -3}});
-        Matrix result = preparer.prepare(input);
+        DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{{7, -3}});
+        DoubleMatrix result = preparer.prepare(input);
 
         assertEquals(0.0, result.get(0, 0), 0.0);
         assertEquals(0.0, result.get(0, 1), 0.0);
@@ -64,15 +64,15 @@ class StandardizePreparerTest {
 
     @Test
     void prepare_ZeroRowMatrix_ThrowsInvalidInput() {
-        Matrix empty = Matrix.columnMajor(new double[0], 0, 2);
+        DoubleMatrix empty = DoubleMatrix.columnMajor(new double[0], 0, 2);
 
         assertThrows(InvalidInputException.class, () -> preparer.prepare(empty));
     }
 
     @Test
     void prepare_InputMatrix_IsNotModified() {
-        Matrix input = Matrix.fromRows(new double[][]{{1, 2}, {3, 4}});
-        Matrix snapshot = input.copy();
+        DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{{1, 2}, {3, 4}});
+        DoubleMatrix snapshot = input.copy();
 
         preparer.prepare(input);
 

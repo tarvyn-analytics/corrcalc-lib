@@ -1,8 +1,8 @@
 package ch.corrcalc.lib.correlation;
 
 import ch.corrcalc.lib.exception.InvalidInputException;
+import ch.corrcalc.lib.matrix.DoubleMatrix;
 import ch.corrcalc.lib.matrix.FloatMatrix;
-import ch.corrcalc.lib.matrix.Matrix;
 import org.junit.jupiter.api.Test;
 
 import java.util.Random;
@@ -18,7 +18,7 @@ class PearsonCorrelationCalculatorTest {
 
     @Test
     void calculate_TwoPerfectlyCorrelatedColumns_ReturnsCorrelationOne() {
-        Matrix input = Matrix.fromRows(new double[][]{
+        DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, 2},
                 {2, 4},
                 {3, 6}
@@ -31,7 +31,7 @@ class PearsonCorrelationCalculatorTest {
 
     @Test
     void calculate_TwoPerfectlyNegativeCorrelatedColumns_ReturnsCorrelationMinusOne() {
-        Matrix input = Matrix.fromRows(new double[][]{
+        DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, -1},
                 {2, -2},
                 {3, -3}
@@ -44,8 +44,8 @@ class PearsonCorrelationCalculatorTest {
 
     @Test
     void calculate_SingleColumn_ReturnsSingleOne() {
-        Matrix input = Matrix.fromRows(new double[][]{{5}, {5}, {5}});
-        Matrix result = calculator.calculate(input);
+        DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{{5}, {5}, {5}});
+        DoubleMatrix result = calculator.calculate(input);
 
         assertEquals(1, result.rows());
         assertEquals(1, result.cols());
@@ -54,7 +54,7 @@ class PearsonCorrelationCalculatorTest {
 
     @Test
     void calculate_ZeroVarianceColumns_ReturnsNaNCorrelation() {
-        Matrix input = Matrix.fromRows(new double[][]{
+        DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {2, 3},
                 {2, 3},
                 {2, 3}
@@ -69,7 +69,7 @@ class PearsonCorrelationCalculatorTest {
 
     @Test
     void calculate_IndependentColumns_ReturnsZeroCorrelation() {
-        Matrix input = Matrix.fromRows(new double[][]{
+        DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, 2},
                 {2, 1},
                 {3, 2}
@@ -82,7 +82,7 @@ class PearsonCorrelationCalculatorTest {
 
     @Test
     void calculate_ThreeColumnsMixedVariances_ReturnsCorrectCorrelations() {
-        Matrix input = Matrix.fromRows(new double[][]{
+        DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, 1, 3},
                 {1, 2, 2},
                 {1, 3, 1}
@@ -107,7 +107,7 @@ class PearsonCorrelationCalculatorTest {
 
     @Test
     void calculate_TwoRowsTwoColumns_ComputesCorrectly() {
-        Matrix input = Matrix.fromRows(new double[][]{
+        DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, 2},
                 {3, 4}
         });
@@ -119,7 +119,7 @@ class PearsonCorrelationCalculatorTest {
 
     @Test
     void calculate_SingleRowInput_ReturnsNaNMatrix() {
-        Matrix input = Matrix.fromRows(new double[][]{{5, 6}});
+        DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{{5, 6}});
         double[][] result = calculator.calculate(input).toRowArrays();
 
         for (int i = 0; i < result.length; i++) {
@@ -138,7 +138,7 @@ class PearsonCorrelationCalculatorTest {
         // r for x={1,2,3,4,5} vs y={2,1,4,3,7} computed by hand:
         // cov = 12/4 = 3.0, var_x = 10/4 = 2.5, var_y = 21.2/4 = 5.3
         // r = 3 / sqrt(2.5 * 5.3) = 0.824163...
-        Matrix input = Matrix.fromRows(new double[][]{
+        DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, 2},
                 {2, 1},
                 {3, 4},
@@ -154,7 +154,7 @@ class PearsonCorrelationCalculatorTest {
 
     @Test
     void calculate_RandomSmallMatrix_MatchesNaiveReferenceImplementation() {
-        Matrix input = randomMatrix(37, 7, 42L);
+        DoubleMatrix input = randomMatrix(37, 7, 42L);
 
         assertMatchesReference(input, calculator.calculate(input));
     }
@@ -165,14 +165,14 @@ class PearsonCorrelationCalculatorTest {
         int p = 50;
         assertTrue((long) n * p * p >= PearsonCorrelationCalculator.PARALLEL_THRESHOLD_FLOPS,
                 "test matrix must be large enough to exercise the parallel path");
-        Matrix input = randomMatrix(n, p, 4242L);
+        DoubleMatrix input = randomMatrix(n, p, 4242L);
 
         assertMatchesReference(input, calculator.calculate(input));
     }
 
     @Test
     void calculate_RandomMatrix_ResultIsSymmetricWithUnitDiagonalAndBoundedValues() {
-        Matrix result = calculator.calculate(randomMatrix(64, 9, 7L));
+        DoubleMatrix result = calculator.calculate(randomMatrix(64, 9, 7L));
 
         assertEquals(9, result.rows());
         assertEquals(9, result.cols());
@@ -187,8 +187,8 @@ class PearsonCorrelationCalculatorTest {
 
     @Test
     void calculate_AffineTransformedColumns_ReturnsSameCorrelationMatrix() {
-        Matrix original = randomMatrix(50, 5, 13L);
-        Matrix transformed = original.copy();
+        DoubleMatrix original = randomMatrix(50, 5, 13L);
+        DoubleMatrix transformed = original.copy();
         for (int j = 0; j < transformed.cols(); j++) {
             double scale = 0.5 + j;
             double shift = 100.0 * (j + 1);
@@ -205,17 +205,17 @@ class PearsonCorrelationCalculatorTest {
 
     @Test
     void calculate_EmptyInput_ThrowsInvalidInput() {
-        Matrix noRows = Matrix.columnMajor(new double[0], 0, 0);
+        DoubleMatrix noRows = DoubleMatrix.columnMajor(new double[0], 0, 0);
         assertThrows(InvalidInputException.class, () -> calculator.calculate(noRows));
 
-        Matrix noCols = Matrix.columnMajor(new double[0], 3, 0);
+        DoubleMatrix noCols = DoubleMatrix.columnMajor(new double[0], 3, 0);
         assertThrows(InvalidInputException.class, () -> calculator.calculate(noCols));
     }
 
     @Test
     void calculate_InputMatrix_IsNotModified() {
-        Matrix input = randomMatrix(20, 4, 99L);
-        Matrix snapshot = input.copy();
+        DoubleMatrix input = randomMatrix(20, 4, 99L);
+        DoubleMatrix snapshot = input.copy();
 
         calculator.calculate(input);
 
@@ -255,7 +255,7 @@ class PearsonCorrelationCalculatorTest {
 
     @Test
     void calculate_FloatRandomSmallMatrix_MatchesDoubleResultWithinFloatPrecision() {
-        Matrix input = randomMatrix(37, 7, 42L);
+        DoubleMatrix input = randomMatrix(37, 7, 42L);
 
         assertMatchesDoubleResult(input, calculator.calculate(floatCopyOf(input)));
     }
@@ -266,7 +266,7 @@ class PearsonCorrelationCalculatorTest {
         int p = 50;
         assertTrue((long) n * p * p >= PearsonCorrelationCalculator.PARALLEL_THRESHOLD_FLOPS,
                 "test matrix must be large enough to exercise the parallel path");
-        Matrix input = randomMatrix(n, p, 4242L);
+        DoubleMatrix input = randomMatrix(n, p, 4242L);
 
         assertMatchesDoubleResult(input, calculator.calculate(floatCopyOf(input)));
     }
@@ -290,9 +290,9 @@ class PearsonCorrelationCalculatorTest {
         assertEquals(snapshot, input);
     }
 
-    private static Matrix randomMatrix(int rows, int cols, long seed) {
+    private static DoubleMatrix randomMatrix(int rows, int cols, long seed) {
         Random random = new Random(seed);
-        Matrix matrix = Matrix.zeros(rows, cols);
+        DoubleMatrix matrix = DoubleMatrix.zeros(rows, cols);
         for (int j = 0; j < cols; j++) {
             for (int i = 0; i < rows; i++) {
                 matrix.set(i, j, random.nextDouble() * 20 - 10);
@@ -307,7 +307,7 @@ class PearsonCorrelationCalculatorTest {
      * already differs from the double one by storage rounding, so the tolerance
      * is float-resolution sized rather than double-sized.
      */
-    private static FloatMatrix floatCopyOf(Matrix input) {
+    private static FloatMatrix floatCopyOf(DoubleMatrix input) {
         FloatMatrix result = FloatMatrix.zeros(input.rows(), input.cols());
         for (int j = 0; j < input.cols(); j++) {
             for (int i = 0; i < input.rows(); i++) {
@@ -317,8 +317,8 @@ class PearsonCorrelationCalculatorTest {
         return result;
     }
 
-    private static void assertMatchesDoubleResult(Matrix input, FloatMatrix actual) {
-        Matrix expected = new PearsonCorrelationCalculator().calculate(input);
+    private static void assertMatchesDoubleResult(DoubleMatrix input, FloatMatrix actual) {
+        DoubleMatrix expected = new PearsonCorrelationCalculator().calculate(input);
         for (int i = 0; i < expected.rows(); i++) {
             for (int j = 0; j < expected.cols(); j++) {
                 assertEquals(expected.get(i, j), actual.get(i, j), 1e-5,
@@ -327,7 +327,7 @@ class PearsonCorrelationCalculatorTest {
         }
     }
 
-    private static void assertMatchesReference(Matrix input, Matrix actual) {
+    private static void assertMatchesReference(DoubleMatrix input, DoubleMatrix actual) {
         double[][] expected = referencePearson(input);
         for (int i = 0; i < expected.length; i++) {
             for (int j = 0; j < expected.length; j++) {
@@ -341,7 +341,7 @@ class PearsonCorrelationCalculatorTest {
      * Naive textbook implementation used as an independent oracle: sample
      * covariance divided by the product of sample standard deviations.
      */
-    private static double[][] referencePearson(Matrix input) {
+    private static double[][] referencePearson(DoubleMatrix input) {
         int n = input.rows();
         int p = input.cols();
         double[] means = new double[p];

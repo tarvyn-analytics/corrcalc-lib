@@ -1,7 +1,7 @@
 package ch.corrcalc.lib.prep;
 
 import ch.corrcalc.lib.exception.InvalidInputException;
-import ch.corrcalc.lib.matrix.Matrix;
+import ch.corrcalc.lib.matrix.DoubleMatrix;
 
 /**
  * Replaces NaN values with the mean of the non-missing values in the same
@@ -11,8 +11,8 @@ import ch.corrcalc.lib.matrix.Matrix;
 final class MeanImputePreparer implements DataPreparer {
 
     @Override
-    public Matrix prepare(Matrix observations) {
-        Matrix result = observations.copy();
+    public DoubleMatrix prepare(DoubleMatrix observations) {
+        DoubleMatrix result = observations.copy();
         int n = result.rows();
         int p = result.cols();
         double[] data = result.data();

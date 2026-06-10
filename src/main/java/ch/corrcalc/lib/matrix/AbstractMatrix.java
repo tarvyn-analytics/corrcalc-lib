@@ -4,7 +4,7 @@ import ch.corrcalc.lib.exception.InvalidInputException;
 
 /**
  * Shared shape and bounds logic for the dense column-major matrix types
- * ({@link Matrix} for double precision, {@link FloatMatrix} for single
+ * ({@link DoubleMatrix} for double precision, {@link FloatMatrix} for single
  * precision). Only the element storage differs between the subclasses.
  */
 abstract class AbstractMatrix {

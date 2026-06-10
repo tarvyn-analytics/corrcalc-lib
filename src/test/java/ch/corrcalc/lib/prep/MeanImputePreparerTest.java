@@ -1,7 +1,7 @@
 package ch.corrcalc.lib.prep;
 
 import ch.corrcalc.lib.exception.InvalidInputException;
-import ch.corrcalc.lib.matrix.Matrix;
+import ch.corrcalc.lib.matrix.DoubleMatrix;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -13,12 +13,12 @@ class MeanImputePreparerTest {
 
     @Test
     void prepare_MissingValues_AreReplacedByColumnMean() {
-        Matrix input = Matrix.fromRows(new double[][]{
+        DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, 10},
                 {Double.NaN, 20},
                 {3, Double.NaN}
         });
-        Matrix result = preparer.prepare(input);
+        DoubleMatrix result = preparer.prepare(input);
 
         assertEquals(2.0, result.get(1, 0), 1e-12);
         assertEquals(15.0, result.get(2, 1), 1e-12);
@@ -29,7 +29,7 @@ class MeanImputePreparerTest {
 
     @Test
     void prepare_NoMissingValues_ReturnsEqualMatrix() {
-        Matrix input = Matrix.fromRows(new double[][]{
+        DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, 2},
                 {3, 4}
         });
@@ -39,7 +39,7 @@ class MeanImputePreparerTest {
 
     @Test
     void prepare_AllNaNColumn_ThrowsInvalidInput() {
-        Matrix input = Matrix.fromRows(new double[][]{
+        DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, Double.NaN},
                 {2, Double.NaN}
         });
@@ -49,11 +49,11 @@ class MeanImputePreparerTest {
 
     @Test
     void prepare_InputMatrix_IsNotModified() {
-        Matrix input = Matrix.fromRows(new double[][]{
+        DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, 2},
                 {Double.NaN, 4}
         });
-        Matrix snapshot = input.copy();
+        DoubleMatrix snapshot = input.copy();
 
         preparer.prepare(input);
 

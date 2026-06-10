@@ -2,7 +2,7 @@ package ch.corrcalc.lib.correlation;
 
 import ch.corrcalc.lib.exception.InvalidInputException;
 import ch.corrcalc.lib.matrix.FloatMatrix;
-import ch.corrcalc.lib.matrix.Matrix;
+import ch.corrcalc.lib.matrix.DoubleMatrix;
 
 import java.util.stream.IntStream;
 
@@ -44,10 +44,10 @@ final class PearsonCorrelationCalculator implements CorrelationCalculator {
     private static final Kernels<float[]> FLOAT_KERNELS = new FloatKernels();
 
     @Override
-    public Matrix calculate(Matrix observations) {
+    public DoubleMatrix calculate(DoubleMatrix observations) {
         int p = observations.cols();
         double[] corr = correlate(observations.data(), observations.rows(), p, DOUBLE_KERNELS);
-        return Matrix.columnMajor(corr, p, p);
+        return DoubleMatrix.columnMajor(corr, p, p);
     }
 
     @Override
@@ -90,132 +90,5 @@ final class PearsonCorrelationCalculator implements CorrelationCalculator {
     private static IntStream columns(int p, boolean parallel) {
         IntStream range = IntStream.range(0, p);
         return parallel ? range.parallel() : range.sequential();
-    }
-
-    /**
-     * The element-type-specific inner loops of the engine. All means, sums of
-     * squares and dot products accumulate in double regardless of the storage type;
-     * only loads and stores touch the element type.
-     */
-    private interface Kernels<A> {
-
-        A allocate(int length);
-
-        /**
-         * Centers column {@code col} of {@code src} and scales it by the inverse of
-         * its centered norm, writing into the same column of {@code dst}. A
-         * zero-variance column is filled with NaN so each pairwise dot product
-         * against it propagates NaN naturally.
-         */
-        void normalizeColumn(A src, A dst, int n, int col);
-
-        /**
-         * Dot product of the {@code n} elements at {@code offsetI} and {@code offsetJ}.
-         */
-        double dot(A data, int offsetI, int offsetJ, int n);
-
-        void set(A data, int index, double value);
-    }
-
-    private static final class DoubleKernels implements Kernels<double[]> {
-
-        @Override
-        public double[] allocate(int length) {
-            return new double[length];
-        }
-
-        @Override
-        public void normalizeColumn(double[] src, double[] dst, int n, int col) {
-            int offset = col * n;
-            double sum = 0;
-            for (int i = 0; i < n; i++) {
-                sum += src[offset + i];
-            }
-            double mean = sum / n;
-
-            double sumSq = 0;
-            for (int i = 0; i < n; i++) {
-                double centered = src[offset + i] - mean;
-                dst[offset + i] = centered;
-                sumSq += centered * centered;
-            }
-
-            if (sumSq == 0) {
-                // zero variance: the correlation coefficient is undefined
-                for (int i = 0; i < n; i++) {
-                    dst[offset + i] = Double.NaN;
-                }
-            } else {
-                double invNorm = 1.0 / Math.sqrt(sumSq);
-                for (int i = 0; i < n; i++) {
-                    dst[offset + i] *= invNorm;
-                }
-            }
-        }
-
-        @Override
-        public double dot(double[] data, int offsetI, int offsetJ, int n) {
-            double r = 0;
-            for (int row = 0; row < n; row++) {
-                r += data[offsetI + row] * data[offsetJ + row];
-            }
-            return r;
-        }
-
-        @Override
-        public void set(double[] data, int index, double value) {
-            data[index] = value;
-        }
-    }
-
-    private static final class FloatKernels implements Kernels<float[]> {
-
-        @Override
-        public float[] allocate(int length) {
-            return new float[length];
-        }
-
-        @Override
-        public void normalizeColumn(float[] src, float[] dst, int n, int col) {
-            int offset = col * n;
-            double sum = 0;
-            for (int i = 0; i < n; i++) {
-                sum += src[offset + i];
-            }
-            double mean = sum / n;
-
-            double sumSq = 0;
-            for (int i = 0; i < n; i++) {
-                double centered = src[offset + i] - mean;
-                dst[offset + i] = (float) centered;
-                sumSq += centered * centered;
-            }
-
-            if (sumSq == 0) {
-                // zero variance: the correlation coefficient is undefined
-                for (int i = 0; i < n; i++) {
-                    dst[offset + i] = Float.NaN;
-                }
-            } else {
-                double invNorm = 1.0 / Math.sqrt(sumSq);
-                for (int i = 0; i < n; i++) {
-                    dst[offset + i] = (float) (dst[offset + i] * invNorm);
-                }
-            }
-        }
-
-        @Override
-        public double dot(float[] data, int offsetI, int offsetJ, int n) {
-            double r = 0;
-            for (int row = 0; row < n; row++) {
-                r += (double) data[offsetI + row] * data[offsetJ + row];
-            }
-            return r;
-        }
-
-        @Override
-        public void set(float[] data, int index, double value) {
-            data[index] = (float) value;
-        }
     }
 }

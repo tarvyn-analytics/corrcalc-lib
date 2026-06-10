@@ -1,7 +1,7 @@
 package ch.corrcalc.lib.io;
 
 import ch.corrcalc.lib.exception.InvalidInputException;
-import ch.corrcalc.lib.matrix.Matrix;
+import ch.corrcalc.lib.matrix.DoubleMatrix;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -19,12 +19,12 @@ class CsvMatrixReaderTest {
 
     @Test
     void read_SpaceSeparatedValues_ParsesIntoMatrix() throws IOException {
-        Matrix result = reader.read(stream("""
+        DoubleMatrix result = reader.read(stream("""
                 1 2 3
                 4 5 6
                 """), 2, 3);
 
-        assertEquals(Matrix.fromRows(new double[][]{
+        assertEquals(DoubleMatrix.fromRows(new double[][]{
                 {1, 2, 3},
                 {4, 5, 6}
         }), result);
@@ -32,7 +32,7 @@ class CsvMatrixReaderTest {
 
     @Test
     void read_TabsAndRepeatedSpaces_AreTreatedAsOneSeparator() throws IOException {
-        Matrix result = reader.read(stream("  1.5\t\t-2.5   3e2 \n4 5.25 -6E-1\r\n"), 2, 3);
+        DoubleMatrix result = reader.read(stream("  1.5\t\t-2.5   3e2 \n4 5.25 -6E-1\r\n"), 2, 3);
 
         assertEquals(1.5, result.get(0, 0), 0.0);
         assertEquals(-2.5, result.get(0, 1), 0.0);
@@ -42,14 +42,14 @@ class CsvMatrixReaderTest {
 
     @Test
     void read_BlankLines_AreSkipped() throws IOException {
-        Matrix result = reader.read(stream("\n1 2\n\n  \t\n3 4\n\n"), 2, 2);
+        DoubleMatrix result = reader.read(stream("\n1 2\n\n  \t\n3 4\n\n"), 2, 2);
 
-        assertEquals(Matrix.fromRows(new double[][]{{1, 2}, {3, 4}}), result);
+        assertEquals(DoubleMatrix.fromRows(new double[][]{{1, 2}, {3, 4}}), result);
     }
 
     @Test
     void read_NaNTokens_AreParsedAsMissingValues() throws IOException {
-        Matrix result = reader.read(stream("1 NaN\n2 3\n"), 2, 2);
+        DoubleMatrix result = reader.read(stream("1 NaN\n2 3\n"), 2, 2);
 
         assertTrue(Double.isNaN(result.get(0, 1)));
         assertEquals(2.0, result.get(1, 0), 0.0);

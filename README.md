@@ -14,26 +14,27 @@ Zero runtime dependencies, built for speed and low memory overhead.
 ```java
 import ch.corrcalc.lib.correlation.Correlations;
 import ch.corrcalc.lib.io.CsvMatrixReader;
+import ch.corrcalc.lib.matrix.DoubleMatrix;
 import ch.corrcalc.lib.matrix.Matrix;
 import ch.corrcalc.lib.prep.Preparers;
 
 // 1) Load data: one observation per row, one variable per column.
 //    Either from arrays...
-Matrix data = Matrix.fromRows(new double[][]{
+DoubleMatrix data = DoubleMatrix.fromRows(new double[][]{
         {1.0, 2.0, 0.5},
         {2.0, 4.1, 0.9},
         {3.0, 6.2, 0.1}
 });
-//    ...or from a whitespace-separated file ("NaN" marks missing values)
-Matrix fromFile = new CsvMatrixReader().read(inputStream, numRows, numCols);
+        //    ...or from a whitespace-separated file ("NaN" marks missing values)
+        DoubleMatrix fromFile = new CsvMatrixReader().read(inputStream, numRows, numCols);
 
-// 2) Optionally prepare the data
-var preparation = Preparers.pipeline(Preparers.imputeMean(), Preparers.standardize());
-Matrix prepared = preparation.prepare(data);
+        // 2) Optionally prepare the data
+        var preparation = Preparers.pipeline(Preparers.imputeMean(), Preparers.standardize());
+        DoubleMatrix prepared = preparation.prepare(data);
 
-// 3) Calculate the correlation matrix (p x p, symmetric, ones on the diagonal)
-Matrix corr = Correlations.pearson().calculate(prepared);
-double r01 = corr.get(0, 1);
+        // 3) Calculate the correlation matrix (p x p, symmetric, ones on the diagonal)
+        DoubleMatrix corr = Correlations.pearson().calculate(prepared);
+        double r01 = corr.get(0, 1);
 ```
 
 ## Package structure

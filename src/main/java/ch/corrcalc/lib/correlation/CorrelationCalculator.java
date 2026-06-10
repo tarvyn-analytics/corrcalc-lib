@@ -1,7 +1,7 @@
 package ch.corrcalc.lib.correlation;
 
+import ch.corrcalc.lib.matrix.DoubleMatrix;
 import ch.corrcalc.lib.matrix.FloatMatrix;
-import ch.corrcalc.lib.matrix.Matrix;
 
 /**
  * Calculates a correlation matrix from an observations matrix.
@@ -17,10 +17,10 @@ public interface CorrelationCalculator {
      *                     (use the {@code prep} package to clean raw data first)
      * @return the {@code p x p} correlation matrix
      */
-    Matrix calculate(Matrix observations);
+    DoubleMatrix calculate(DoubleMatrix observations);
 
     /**
-     * Single-precision variant of {@link #calculate(Matrix)} for memory-constrained
+     * Single-precision variant of {@link #calculate(DoubleMatrix)} for memory-constrained
      * datasets. Storage and data transfer are halved while all sums still accumulate
      * in double precision, so the result is accurate to roughly single-precision
      * resolution (~1e-7) rather than degraded further by the summation.

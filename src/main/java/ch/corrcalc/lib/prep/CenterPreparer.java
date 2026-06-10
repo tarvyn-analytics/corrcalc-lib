@@ -1,7 +1,7 @@
 package ch.corrcalc.lib.prep;
 
 import ch.corrcalc.lib.exception.InvalidInputException;
-import ch.corrcalc.lib.matrix.Matrix;
+import ch.corrcalc.lib.matrix.DoubleMatrix;
 
 /**
  * Subtracts each column's mean so that every column is centered on zero.
@@ -9,12 +9,12 @@ import ch.corrcalc.lib.matrix.Matrix;
 final class CenterPreparer implements DataPreparer {
 
     @Override
-    public Matrix prepare(Matrix observations) {
+    public DoubleMatrix prepare(DoubleMatrix observations) {
         int n = observations.rows();
         if (n < 1) {
             throw new InvalidInputException("Centering requires at least one observation row");
         }
-        Matrix result = observations.copy();
+        DoubleMatrix result = observations.copy();
         int p = result.cols();
         double[] data = result.data();
 

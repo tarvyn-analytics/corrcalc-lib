@@ -5,17 +5,17 @@ import ch.corrcalc.lib.exception.InvalidInputException;
 import java.util.Arrays;
 
 /**
- * The single-precision variant of {@link Matrix}: a dense matrix of floats
+ * The single-precision variant of {@link DoubleMatrix}: a dense matrix of floats
  * backed by a single flat array in <b>column-major</b> order.
  * <p>
- * It halves the memory footprint and data transfer of {@link Matrix} at the
+ * It halves the memory footprint and data transfer of {@link DoubleMatrix} at the
  * cost of ~7 significant decimal digits per element, which is plenty for
  * correlation work on measured data. Calculators still accumulate all sums in
  * double precision, so only the storage — not the arithmetic — is single
  * precision.
  * <p>
  * The storage, ownership and zero-copy semantics are identical to
- * {@link Matrix}; see there for the rationale.
+ * {@link DoubleMatrix}; see there for the rationale.
  */
 public final class FloatMatrix extends AbstractMatrix {
 

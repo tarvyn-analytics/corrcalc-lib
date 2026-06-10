@@ -1,7 +1,7 @@
 package ch.corrcalc.lib.io;
 
 import ch.corrcalc.lib.exception.InvalidInputException;
-import ch.corrcalc.lib.matrix.Matrix;
+import ch.corrcalc.lib.matrix.DoubleMatrix;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -22,7 +22,7 @@ import java.nio.charset.StandardCharsets;
 public final class CsvMatrixReader implements MatrixReader {
 
     @Override
-    public Matrix read(InputStream inputStream, int numRows, int numCols) throws IOException {
+    public DoubleMatrix read(InputStream inputStream, int numRows, int numCols) throws IOException {
         if (inputStream == null) {
             throw new InvalidInputException("Input stream must not be null");
         }
@@ -49,7 +49,7 @@ public final class CsvMatrixReader implements MatrixReader {
         if (row < numRows) {
             throw new InvalidInputException("Expected [" + numRows + "] rows but found only [" + row + "]");
         }
-        return Matrix.columnMajor(data, numRows, numCols);
+        return DoubleMatrix.columnMajor(data, numRows, numCols);
     }
 
     /**

@@ -1,7 +1,7 @@
 package ch.corrcalc.lib.prep;
 
 import ch.corrcalc.lib.exception.InvalidInputException;
-import ch.corrcalc.lib.matrix.Matrix;
+import ch.corrcalc.lib.matrix.DoubleMatrix;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,12 +23,12 @@ class PreparersTest {
         // dropping the NaN row first means the mean of the remaining values is used nowhere,
         // while imputing first would have kept three rows — order is observable
         DataPreparer dropThenImpute = Preparers.dropMissingRows().andThen(Preparers.imputeMean());
-        Matrix input = Matrix.fromRows(new double[][]{
+        DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, 2},
                 {Double.NaN, 4},
                 {5, 6}
         });
-        Matrix result = dropThenImpute.prepare(input);
+        DoubleMatrix result = dropThenImpute.prepare(input);
 
         assertEquals(2, result.rows());
     }
@@ -38,12 +38,12 @@ class PreparersTest {
         DataPreparer pipeline = Preparers.pipeline(
                 Preparers.imputeMean(),
                 Preparers.standardize());
-        Matrix input = Matrix.fromRows(new double[][]{
+        DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, 10},
                 {Double.NaN, 20},
                 {3, 30}
         });
-        Matrix result = pipeline.prepare(input);
+        DoubleMatrix result = pipeline.prepare(input);
 
         assertEquals(3, result.rows());
         // imputed value equals the column mean, so it standardizes to exactly zero
@@ -52,7 +52,7 @@ class PreparersTest {
 
     @Test
     void pipeline_SingleStep_BehavesLikeTheStepItself() {
-        Matrix input = Matrix.fromRows(new double[][]{{1, 2}, {3, 4}});
+        DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{{1, 2}, {3, 4}});
 
         assertEquals(Preparers.center().prepare(input),
                 Preparers.pipeline(Preparers.center()).prepare(input));

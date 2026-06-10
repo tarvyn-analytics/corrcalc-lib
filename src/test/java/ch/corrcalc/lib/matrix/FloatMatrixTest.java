@@ -157,10 +157,12 @@ class FloatMatrixTest {
     void equals_DifferentContentShapeOrElementType_AreNotEqual() {
         FloatMatrix base = FloatMatrix.fromRows(new float[][]{{1, 2}, {3, 4}});
 
-        assertNotEquals(base, FloatMatrix.fromRows(new float[][]{{1, 2}, {3, 5}}));
-        assertNotEquals(base, FloatMatrix.columnMajor(new float[]{1, 3, 2, 4}, 4, 1));
-        assertNotEquals(base, Matrix.fromRows(new double[][]{{1, 2}, {3, 4}}));
-        assertNotEquals(Matrix.fromRows(new double[][]{{1, 2}, {3, 4}}), base);
+        assertNotEquals(FloatMatrix.fromRows(new float[][]{{1, 2}, {3, 5}}), base);
+        assertNotEquals(FloatMatrix.columnMajor(new float[]{1, 3, 2, 4}, 4, 1), base);
+        // cross-type comparison runs in both directions on purpose: each matrix
+        // type's equals must reject the other element type as the receiver
+        assertNotEquals(DoubleMatrix.fromRows(new double[][]{{1, 2}, {3, 4}}), base);
+        assertNotEquals(base, DoubleMatrix.fromRows(new double[][]{{1, 2}, {3, 4}}));
     }
 
     @Test

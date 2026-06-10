@@ -22,11 +22,11 @@ import java.util.Arrays;
  * See {@link FloatMatrix} for the single-precision variant that halves the
  * memory footprint.
  */
-public final class Matrix extends AbstractMatrix {
+public final class DoubleMatrix extends AbstractMatrix {
 
     private final double[] data;
 
-    private Matrix(double[] data, int rows, int cols) {
+    private DoubleMatrix(double[] data, int rows, int cols) {
         super(rows, cols);
         this.data = data;
     }
@@ -40,21 +40,21 @@ public final class Matrix extends AbstractMatrix {
      * @param cols number of columns, zero or more
      * @return a matrix backed directly by {@code data}
      */
-    public static Matrix columnMajor(double[] data, int rows, int cols) {
+    public static DoubleMatrix columnMajor(double[] data, int rows, int cols) {
         if (data == null) {
             throw new InvalidInputException("Matrix data must not be null");
         }
         validateDimensions(rows, cols);
         validateDataLength(data.length, rows, cols);
-        return new Matrix(data, rows, cols);
+        return new DoubleMatrix(data, rows, cols);
     }
 
     /**
      * Creates a zero-filled matrix of the given dimensions.
      */
-    public static Matrix zeros(int rows, int cols) {
+    public static DoubleMatrix zeros(int rows, int cols) {
         validateDimensions(rows, cols);
-        return new Matrix(new double[checkedLength(rows, cols)], rows, cols);
+        return new DoubleMatrix(new double[checkedLength(rows, cols)], rows, cols);
     }
 
     /**
@@ -63,7 +63,7 @@ public final class Matrix extends AbstractMatrix {
      *
      * @param rowData one array per row, all of equal length
      */
-    public static Matrix fromRows(double[][] rowData) {
+    public static DoubleMatrix fromRows(double[][] rowData) {
         if (rowData == null) {
             throw new InvalidInputException("Matrix data must not be null");
         }
@@ -80,7 +80,7 @@ public final class Matrix extends AbstractMatrix {
                 data[j * numRows + i] = row[j];
             }
         }
-        return new Matrix(data, numRows, numCols);
+        return new DoubleMatrix(data, numRows, numCols);
     }
 
     public double get(int row, int col) {
@@ -120,13 +120,13 @@ public final class Matrix extends AbstractMatrix {
     /**
      * Returns a deep copy backed by its own array.
      */
-    public Matrix copy() {
-        return new Matrix(Arrays.copyOf(data, data.length), rows, cols);
+    public DoubleMatrix copy() {
+        return new DoubleMatrix(Arrays.copyOf(data, data.length), rows, cols);
     }
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof Matrix other)) {
+        if (!(o instanceof DoubleMatrix other)) {
             return false;
         }
         return rows == other.rows && cols == other.cols && Arrays.equals(data, other.data);

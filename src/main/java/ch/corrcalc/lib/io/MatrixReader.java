@@ -1,6 +1,6 @@
 package ch.corrcalc.lib.io;
 
-import ch.corrcalc.lib.matrix.Matrix;
+import ch.corrcalc.lib.matrix.DoubleMatrix;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,5 +17,5 @@ public interface MatrixReader {
      * @return the parsed {@code numRows x numCols} matrix
      * @throws IOException if reading from the stream fails
      */
-    Matrix read(InputStream inputStream, int numRows, int numCols) throws IOException;
+    DoubleMatrix read(InputStream inputStream, int numRows, int numCols) throws IOException;
 }

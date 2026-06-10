@@ -1,7 +1,7 @@
 package ch.corrcalc.lib.prep;
 
 import ch.corrcalc.lib.exception.InvalidInputException;
-import ch.corrcalc.lib.matrix.Matrix;
+import ch.corrcalc.lib.matrix.DoubleMatrix;
 
 /**
  * Standardizes each column to a z-score: subtracts the column mean and divides
@@ -14,12 +14,12 @@ import ch.corrcalc.lib.matrix.Matrix;
 final class StandardizePreparer implements DataPreparer {
 
     @Override
-    public Matrix prepare(Matrix observations) {
+    public DoubleMatrix prepare(DoubleMatrix observations) {
         int n = observations.rows();
         if (n < 1) {
             throw new InvalidInputException("Standardizing requires at least one observation row");
         }
-        Matrix result = observations.copy();
+        DoubleMatrix result = observations.copy();
         int p = result.cols();
         double[] data = result.data();
 
