@@ -106,10 +106,27 @@ concurrency argument valid: parallel tasks may only write disjoint index sets.
   coded inside the test, on seeded (`new Random(42L)`-style) data — never
   against values produced by the code under test.
 
-## Git
+## Delivery: Jira, Git, PRs, CI
 
-- Commit style: conventional commits with scope, e.g. `feat(lib): ...`,
-  `refactor(lib): ...`, `docs(lib): ...`; body explains the why.
-- GPG signing fails under WSL ("Unusable secret key") — use
-  `git commit --no-gpg-sign` from WSL and say the commit is unsigned, or sign
-  from Windows.
+- **Jira** (project `COR`): use `.claude/tools/jira/jira.sh` — full usage in
+  `.claude/skills/jira/SKILL.md`. Every piece of work hangs off an issue;
+  epic for the initiative, task per deliverable. Transition to `In Progress`
+  when starting, `Done` with a PR/commit reference when finished.
+- **GitFlow**: `main` (production) ← `develop` (integration) ← `feature/*`.
+  Branch naming: `feature/COR-<n>-eb-<short-description>`. PRs target
+  `develop`; only release merges go `develop` → `main`.
+- **Commit style**: conventional commits with scope and issue key, e.g.
+  `feat(lib): [COR-305]: add float kernels`; body explains the why.
+  GPG signing fails under WSL ("Unusable secret key") — use
+  `git commit --no-gpg-sign` from WSL and say the commit is unsigned, or
+  sign from Windows.
+- **GitHub** (`tarvyn-analytics/corrcalc-lib`, private): use the `gh` CLI
+  directly — `gh pr create --base develop --title "feat(lib): [COR-n]: ..."`,
+  `gh pr checks --watch`, `gh pr merge --squash`, `gh run watch`.
+- **CI** (`.github/workflows/`): `validate-on-pull-request.yml` runs
+  `./mvnw -Ppublish clean verify` on PRs to develop/main and uploads the
+  JaCoCo report; `build-on-push.yml` publishes the jar (with sources and
+  javadoc) to GitHub Packages on pushes — develop publishes the SNAPSHOT,
+  main strips the suffix and publishes the release. The same release version
+  cannot be published twice, so bump the version on develop before each
+  release merge to main. No DB, no Docker — keep it that way.
