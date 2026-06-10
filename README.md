@@ -12,10 +12,10 @@ Zero runtime dependencies, built for speed and low memory overhead.
 ```
 
 ```java
-import ch.corrcalc.lib.correlation.Correlations;
-import ch.corrcalc.lib.io.CsvMatrixReader;
-import ch.corrcalc.lib.matrix.DoubleMatrix;
-import ch.corrcalc.lib.prep.Preparers;
+import ch.tarvynanalytics.corrcalc.lib.correlation.Correlations;
+import ch.tarvynanalytics.corrcalc.lib.io.CsvMatrixReader;
+import ch.tarvynanalytics.corrcalc.lib.matrix.DoubleMatrix;
+import ch.tarvynanalytics.corrcalc.lib.prep.Preparers;
 
 // 1) Load data: one observation per row, one variable per column.
 //    Either from arrays...
@@ -39,7 +39,7 @@ double r01 = corr.get(0, 1);
 ## Package structure
 
 ```
-ch.corrcalc.lib/
+ch.tarvynanalytics.corrcalc.lib/
 ├── matrix/       # DoubleMatrix & FloatMatrix — flat column-major storage
 ├── correlation/  # CorrelationCalculator, CorrelationType, Correlations factory
 ├── prep/         # DataPreparer steps: dropMissingRows, imputeMean, center, standardize
