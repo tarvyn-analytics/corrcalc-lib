@@ -15,7 +15,6 @@ Zero runtime dependencies, built for speed and low memory overhead.
 import ch.corrcalc.lib.correlation.Correlations;
 import ch.corrcalc.lib.io.CsvMatrixReader;
 import ch.corrcalc.lib.matrix.DoubleMatrix;
-import ch.corrcalc.lib.matrix.Matrix;
 import ch.corrcalc.lib.prep.Preparers;
 
 // 1) Load data: one observation per row, one variable per column.
@@ -25,23 +24,23 @@ DoubleMatrix data = DoubleMatrix.fromRows(new double[][]{
         {2.0, 4.1, 0.9},
         {3.0, 6.2, 0.1}
 });
-        //    ...or from a whitespace-separated file ("NaN" marks missing values)
-        DoubleMatrix fromFile = new CsvMatrixReader().read(inputStream, numRows, numCols);
+//    ...or from a whitespace-separated file ("NaN" marks missing values)
+DoubleMatrix fromFile = new CsvMatrixReader().read(inputStream, numRows, numCols);
 
-        // 2) Optionally prepare the data
-        var preparation = Preparers.pipeline(Preparers.imputeMean(), Preparers.standardize());
-        DoubleMatrix prepared = preparation.prepare(data);
+// 2) Optionally prepare the data
+var preparation = Preparers.pipeline(Preparers.imputeMean(), Preparers.standardize());
+DoubleMatrix prepared = preparation.prepare(data);
 
-        // 3) Calculate the correlation matrix (p x p, symmetric, ones on the diagonal)
-        DoubleMatrix corr = Correlations.pearson().calculate(prepared);
-        double r01 = corr.get(0, 1);
+// 3) Calculate the correlation matrix (p x p, symmetric, ones on the diagonal)
+DoubleMatrix corr = Correlations.pearson().calculate(prepared);
+double r01 = corr.get(0, 1);
 ```
 
 ## Package structure
 
 ```
 ch.corrcalc.lib/
-├── matrix/       # Matrix (double) & FloatMatrix (float) — flat column-major storage
+├── matrix/       # DoubleMatrix & FloatMatrix — flat column-major storage
 ├── correlation/  # CorrelationCalculator, CorrelationType, Correlations factory
 ├── prep/         # DataPreparer steps: dropMissingRows, imputeMean, center, standardize
 ├── io/           # MatrixReader, CsvMatrixReader (whitespace-separated values)
@@ -52,8 +51,8 @@ ch.corrcalc.lib/
 
 - **Column-major flat storage.** All statistics here are per-column (means,
   variances, column dot products), so each column being one contiguous memory
-  block keeps the hot loops sequential and cache-friendly. `Matrix.columnMajor`
-  and `Matrix.data()` are zero-copy by design.
+  block keeps the hot loops sequential and cache-friendly. `DoubleMatrix.columnMajor`
+  and `DoubleMatrix.data()` are zero-copy by design.
 - **Pearson in two passes.** Each column is centered and scaled by the inverse
   of its centered norm; every coefficient is then a single dot product — the
   `(n-1)` factors cancel out exactly. Extra memory: one `n*p` working buffer

@@ -26,7 +26,7 @@ There is nothing to "run" — this is a library; the tests are the executable sp
 
 ```
 ch.corrcalc.lib/
-├── matrix/       # Matrix (double) & FloatMatrix (float) — flat column-major
+├── matrix/       # DoubleMatrix & FloatMatrix — flat column-major
 │                 # storage; AbstractMatrix holds the shared shape/bounds logic
 ├── correlation/  # CorrelationCalculator, CorrelationType, Correlations factory;
 │                 # implementations are package-private (PearsonCorrelationCalculator)
@@ -61,7 +61,7 @@ ch.corrcalc.lib/
 
 1. Add a constant to `CorrelationType`.
 2. Add a package-private implementation of `CorrelationCalculator`
-   (both the `Matrix` and `FloatMatrix` methods).
+   (both the `DoubleMatrix` and `FloatMatrix` methods).
 3. Add the factory method and `switch` arm in `Correlations`.
 4. Mirror the test layout: port edge cases, cross-check against a naive
    reference implementation in the test for both serial and parallel paths.
