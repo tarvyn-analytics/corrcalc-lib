@@ -124,6 +124,9 @@ concurrency argument valid: parallel tasks may only write disjoint index sets.
   directly — `gh pr create --base develop --title "feat(lib): [COR-n]: ..."`,
   `gh pr checks --watch`, `gh pr merge --squash`, `gh run watch`.
 - **CI** (`.github/workflows/`): `validate-on-pull-request.yml` runs
-  `./mvnw clean verify` on PRs to develop/main and uploads the JaCoCo report;
-  `build-on-push.yml` does the same on pushes to develop/main and uploads the
-  jar. No DB, no Docker — keep it that way.
+  `./mvnw -Ppublish clean verify` on PRs to develop/main and uploads the
+  JaCoCo report; `build-on-push.yml` publishes the jar (with sources and
+  javadoc) to GitHub Packages on pushes — develop publishes the SNAPSHOT,
+  main strips the suffix and publishes the release. The same release version
+  cannot be published twice, so bump the version on develop before each
+  release merge to main. No DB, no Docker — keep it that way.

@@ -28,8 +28,10 @@ jobs:
           java-version: 21
           cache: maven
 
+      # -Ppublish builds the source and javadoc jars too, so a PR cannot
+      # merge with javadoc errors that would break publishing on push.
       - name: Build, test and enforce coverage
-        run: ./mvnw --batch-mode clean verify
+        run: ./mvnw --batch-mode -Ppublish clean verify
 
       - name: Upload coverage report
         if: always()
