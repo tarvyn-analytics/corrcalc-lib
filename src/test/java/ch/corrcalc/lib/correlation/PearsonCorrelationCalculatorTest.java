@@ -1,6 +1,7 @@
 package ch.corrcalc.lib.correlation;
 
 import ch.corrcalc.lib.exception.InvalidInputException;
+import ch.corrcalc.lib.matrix.FloatMatrix;
 import ch.corrcalc.lib.matrix.Matrix;
 import org.junit.jupiter.api.Test;
 
@@ -221,6 +222,74 @@ class PearsonCorrelationCalculatorTest {
         assertEquals(snapshot, input);
     }
 
+    @Test
+    void calculate_FloatPerfectlyCorrelatedColumns_ReturnsCorrelationOne() {
+        FloatMatrix input = FloatMatrix.fromRows(new float[][]{
+                {1, 2},
+                {2, 4},
+                {3, 6}
+        });
+        FloatMatrix result = calculator.calculate(input);
+
+        assertEquals(2, result.rows());
+        assertEquals(2, result.cols());
+        assertEquals(1.0f, result.get(0, 1), 1e-6f);
+        assertEquals(1.0f, result.get(1, 0), 1e-6f);
+        assertEquals(1.0f, result.get(0, 0), 0.0f);
+        assertEquals(1.0f, result.get(1, 1), 0.0f);
+    }
+
+    @Test
+    void calculate_FloatZeroVarianceColumn_ReturnsNaNCorrelation() {
+        FloatMatrix input = FloatMatrix.fromRows(new float[][]{
+                {2, 1},
+                {2, 2},
+                {2, 3}
+        });
+        FloatMatrix result = calculator.calculate(input);
+
+        assertEquals(1.0f, result.get(0, 0), 0.0f);
+        assertTrue(Float.isNaN(result.get(0, 1)));
+        assertTrue(Float.isNaN(result.get(1, 0)));
+    }
+
+    @Test
+    void calculate_FloatRandomSmallMatrix_MatchesDoubleResultWithinFloatPrecision() {
+        Matrix input = randomMatrix(37, 7, 42L);
+
+        assertMatchesDoubleResult(input, calculator.calculate(floatCopyOf(input)));
+    }
+
+    @Test
+    void calculate_FloatLargeMatrixAboveParallelThreshold_MatchesDoubleResultWithinFloatPrecision() {
+        int n = 250;
+        int p = 50;
+        assertTrue((long) n * p * p >= PearsonCorrelationCalculator.PARALLEL_THRESHOLD_FLOPS,
+                "test matrix must be large enough to exercise the parallel path");
+        Matrix input = randomMatrix(n, p, 4242L);
+
+        assertMatchesDoubleResult(input, calculator.calculate(floatCopyOf(input)));
+    }
+
+    @Test
+    void calculate_FloatEmptyInput_ThrowsInvalidInput() {
+        FloatMatrix noRows = FloatMatrix.columnMajor(new float[0], 0, 0);
+        assertThrows(InvalidInputException.class, () -> calculator.calculate(noRows));
+
+        FloatMatrix noCols = FloatMatrix.columnMajor(new float[0], 3, 0);
+        assertThrows(InvalidInputException.class, () -> calculator.calculate(noCols));
+    }
+
+    @Test
+    void calculate_FloatInputMatrix_IsNotModified() {
+        FloatMatrix input = floatCopyOf(randomMatrix(20, 4, 99L));
+        FloatMatrix snapshot = input.copy();
+
+        calculator.calculate(input);
+
+        assertEquals(snapshot, input);
+    }
+
     private static Matrix randomMatrix(int rows, int cols, long seed) {
         Random random = new Random(seed);
         Matrix matrix = Matrix.zeros(rows, cols);
@@ -230,6 +299,32 @@ class PearsonCorrelationCalculatorTest {
             }
         }
         return matrix;
+    }
+
+    /**
+     * Converts the matrix to single precision; the float result is then compared
+     * against the double result computed from the same data. The float input
+     * already differs from the double one by storage rounding, so the tolerance
+     * is float-resolution sized rather than double-sized.
+     */
+    private static FloatMatrix floatCopyOf(Matrix input) {
+        FloatMatrix result = FloatMatrix.zeros(input.rows(), input.cols());
+        for (int j = 0; j < input.cols(); j++) {
+            for (int i = 0; i < input.rows(); i++) {
+                result.set(i, j, (float) input.get(i, j));
+            }
+        }
+        return result;
+    }
+
+    private static void assertMatchesDoubleResult(Matrix input, FloatMatrix actual) {
+        Matrix expected = new PearsonCorrelationCalculator().calculate(input);
+        for (int i = 0; i < expected.rows(); i++) {
+            for (int j = 0; j < expected.cols(); j++) {
+                assertEquals(expected.get(i, j), actual.get(i, j), 1e-5,
+                        "mismatch at [" + i + "," + j + "]");
+            }
+        }
     }
 
     private static void assertMatchesReference(Matrix input, Matrix actual) {

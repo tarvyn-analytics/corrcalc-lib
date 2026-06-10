@@ -1,5 +1,6 @@
 package ch.corrcalc.lib.correlation;
 
+import ch.corrcalc.lib.matrix.FloatMatrix;
 import ch.corrcalc.lib.matrix.Matrix;
 
 /**
@@ -17,4 +18,15 @@ public interface CorrelationCalculator {
      * @return the {@code p x p} correlation matrix
      */
     Matrix calculate(Matrix observations);
+
+    /**
+     * Single-precision variant of {@link #calculate(Matrix)} for memory-constrained
+     * datasets. Storage and data transfer are halved while all sums still accumulate
+     * in double precision, so the result is accurate to roughly single-precision
+     * resolution (~1e-7) rather than degraded further by the summation.
+     *
+     * @param observations an {@code n x p} matrix, {@code n >= 1}, free of NaN/Infinity
+     * @return the {@code p x p} correlation matrix
+     */
+    FloatMatrix calculate(FloatMatrix observations);
 }

@@ -40,7 +40,7 @@ double r01 = corr.get(0, 1);
 
 ```
 ch.corrcalc.lib/
-├── matrix/       # Matrix — flat column-major double[] storage
+├── matrix/       # Matrix (double) & FloatMatrix (float) — flat column-major storage
 ├── correlation/  # CorrelationCalculator, CorrelationType, Correlations factory
 ├── prep/         # DataPreparer steps: dropMissingRows, imputeMean, center, standardize
 ├── io/           # MatrixReader, CsvMatrixReader (whitespace-separated values)
@@ -60,6 +60,9 @@ ch.corrcalc.lib/
 - **Parallelism adjusts to the machine.** Both phases fan out across columns on
   the ForkJoin common pool (sized to the available cores) once the estimated
   work crosses a threshold; small inputs stay on the calling thread.
+- **Single-precision variant.** `FloatMatrix` halves memory and data transfer;
+  `Correlations.pearson().calculate(floatMatrix)` returns a `FloatMatrix` while
+  all sums still accumulate in double precision.
 - **Missing values are explicit.** Calculators expect clean input; NaN handling
   is the job of the `prep` package (listwise deletion or mean imputation).
 - **Zero-variance columns** yield `NaN` coefficients (the value is undefined),

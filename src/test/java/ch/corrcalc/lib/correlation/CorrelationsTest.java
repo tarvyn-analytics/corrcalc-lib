@@ -1,6 +1,7 @@
 package ch.corrcalc.lib.correlation;
 
 import ch.corrcalc.lib.exception.InvalidInputException;
+import ch.corrcalc.lib.matrix.FloatMatrix;
 import ch.corrcalc.lib.matrix.Matrix;
 import org.junit.jupiter.api.Test;
 
@@ -39,5 +40,17 @@ class CorrelationsTest {
         Matrix result = Correlations.pearson().calculate(input);
 
         assertEquals(1.0, result.get(0, 1), 1e-9);
+    }
+
+    @Test
+    void pearson_SimpleFloatInput_CalculatesCorrelation() {
+        FloatMatrix input = FloatMatrix.fromRows(new float[][]{
+                {1, 2},
+                {2, 4},
+                {3, 6}
+        });
+        FloatMatrix result = Correlations.pearson().calculate(input);
+
+        assertEquals(1.0f, result.get(0, 1), 1e-6f);
     }
 }
