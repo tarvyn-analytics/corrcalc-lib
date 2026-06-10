@@ -1,84 +1,115 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code when working with this repository.
+Guidance for Claude Code when working in this repository.
 
-## Project Overview
+Read `README.md` first — it owns the project overview, public API examples,
+package layout and design rationale. This file does not repeat that; it tells
+you how to work on the code: the rules that must hold, and step-by-step guides
+for the common tasks.
 
-CorrCalc Lib is a pure Java library for calculating correlation matrices from
-numerical datasets. **Zero runtime dependencies** — no Spring, no database, no
-web layer; keep it that way. Performance (speed, memory, minimal data transfer)
-is the primary design goal.
-
-**Tech stack:** Java 21+ (built with `maven.compiler.release=21`), Maven,
-JUnit 5, JaCoCo.
-
-## Common Commands
+## Commands
 
 ```bash
-./mvnw clean verify          # build, run all tests, enforce coverage gates
-./mvnw test                  # tests only
+./mvnw clean verify          # full build: tests + coverage gates — run before claiming done
+./mvnw test                  # tests only (faster iteration)
 ./mvnw test -Dtest=ClassName # single test class
 ```
 
-There is nothing to "run" — this is a library; the tests are the executable spec.
+Coverage report: `target/site/jacoco/index.html` (CSV next to it for scripting).
+This is a library — there is no application to run; the tests are the
+executable spec.
 
-## Architecture
+## Invariants — never break these
 
-```
-ch.corrcalc.lib/
-├── matrix/       # DoubleMatrix & FloatMatrix — flat column-major
-│                 # storage; AbstractMatrix holds the shared shape/bounds logic
-├── correlation/  # CorrelationCalculator, CorrelationType, Correlations factory;
-│                 # implementations are package-private (PearsonCorrelationCalculator)
-├── prep/         # DataPreparer steps behind the Preparers factory:
-│                 # dropMissingRows, imputeMean, center, standardize
-├── io/           # MatrixReader + CsvMatrixReader (whitespace-separated values,
-│                 # "NaN" tokens = missing values)
-└── exception/    # CorrCalcException (base), InvalidInputException
-```
+1. **Zero runtime dependencies.** Test scope (JUnit) is the only exception.
+   Do not add Spring, Lombok, EJML, commons-*, anything.
+2. **Column-major flat arrays.** Element `(row, col)` lives at
+   `col * rows + row`. Every algorithm iterates columns as contiguous blocks.
+3. **Zero-copy contracts.** `columnMajor(...)` takes ownership of the array;
+   `data()` returns the live backing array. Never add defensive copies to
+   these paths; never mutate an array you received through `data()` of a
+   matrix you don't own.
+4. **Accumulate in double, always** — including all `float[]` code paths.
+   Only loads and stores are single precision.
+5. **Calculators and preparers are stateless**; factories (`Correlations`,
+   `Preparers`) hand out shared singletons. Preparers return a new matrix and
+   never mutate their input.
+6. **Implementations are package-private.** Only interfaces, factories,
+   matrix types and exceptions are public. Keep it that way.
+7. **Validation errors throw `InvalidInputException`** with the offending
+   values in brackets, e.g. `"... got [3x0]"`.
+8. **Coverage gates 80% line / 70% branch** are enforced by `verify`; actual
+   coverage is ~99%. New code arrives with tests in the same commit.
 
-## Design Rules
+## Task guides
 
-- **Column-major flat arrays everywhere.** Element `(row, col)` lives at
-  `col * rows + row`. All statistics are per-column, so columns must stay
-  contiguous. `data()` exposes the live backing array on purpose (zero-copy);
-  factory methods taking arrays take ownership without copying.
-- **Accumulate in double, always** — also in the float code paths. Only loads
-  and stores are single precision.
-- **Parallelism via the ForkJoin common pool** (auto-sized to cores), gated by
-  `PARALLEL_THRESHOLD_FLOPS` (~n*p*p) so small inputs stay on the calling
-  thread. No CPU/GPU-specific tuning yet.
-- **Calculators expect clean input.** NaN handling (drop/impute) belongs in
-  `prep`, not in calculators. Zero-variance columns yield NaN coefficients
-  with the diagonal staying 1.
-- **Preparers never mutate their input** and are stateless; factories return
-  shared singletons.
-- **double/float duplication is confined to kernels.** The Pearson engine is
-  written once, generic over the storage array; `Kernels<A>` implementations
-  hold the type-specific inner loops. Follow this pattern for new calculators.
+### Add a correlation type (e.g. partial correlation)
 
-## Adding a Correlation Type (e.g. partial correlation)
+1. Add the constant to `CorrelationType`.
+2. Create a package-private `XxxCorrelationCalculator implements
+   CorrelationCalculator` in `correlation/`. Implement **both** overloads
+   (`DoubleMatrix` and `FloatMatrix`). Write the algorithm once as a private
+   generic engine over the storage array `A` and reuse `Kernels<A>`
+   (`DoubleKernels` / `FloatKernels`); extend `Kernels` with new primitives if
+   the algorithm needs loops the interface doesn't cover yet.
+3. Gate parallelism the same way Pearson does: estimate the work in
+   multiply-adds, compare against a `PARALLEL_THRESHOLD_FLOPS`-style constant,
+   and fan out across columns with the `columns(p, parallel)` ternary helper
+   pattern (no `stream = stream.parallel()` reassignment — IntelliJ flags it).
+4. Add the factory method and `switch` arm in `Correlations` (singleton field,
+   like `PEARSON`).
+5. Tests (see conventions below): port the Pearson edge cases that apply
+   (zero variance, single row/column, empty input throws), verify against a
+   naive textbook implementation written inside the test on seeded random
+   data — once below and once above the parallel threshold — and add float
+   tests comparing against the double result with ~1e-5 tolerance.
+6. Mention the new type in README's package-structure comment if it changes.
 
-1. Add a constant to `CorrelationType`.
-2. Add a package-private implementation of `CorrelationCalculator`
-   (both the `DoubleMatrix` and `FloatMatrix` methods).
-3. Add the factory method and `switch` arm in `Correlations`.
-4. Mirror the test layout: port edge cases, cross-check against a naive
-   reference implementation in the test for both serial and parallel paths.
+### Add a data preparation step
 
-## Testing Conventions
+1. Create a package-private `XxxPreparer implements DataPreparer` in `prep/`.
+   Start from `observations.copy()` (or build a fresh array, like
+   `DropMissingRowsPreparer` does when rows change) and work column-wise.
+2. Decide the degenerate-column policy explicitly and document it in the
+   class javadoc (precedents: all-NaN column → throw in `MeanImputePreparer`;
+   zero variance → all zeros in `StandardizePreparer`).
+3. Register a singleton + factory method in `Preparers`.
+4. Tests: the transformation itself, the edge cases from step 2, and always a
+   `prepare_InputMatrix_IsNotModified` snapshot test.
 
-- Test naming: `method_Scenario_Expectation` (e.g.
-  `calculate_ZeroVarianceColumns_ReturnsNaNCorrelation`).
-- Tests mirror the main package layout 1:1; cross-package flows go into
-  `CorrelationEndToEndTest` at the root.
-- Numerical results are verified against independent naive textbook
-  implementations written inside the tests, on seeded random data.
-- Coverage gates (enforced by `verify`): **80% line, 70% branch** minimum.
+### Add a matrix storage type
 
-## Pitfalls
+Extend `AbstractMatrix` (shared shape/bounds logic lives there), mirror the
+`DoubleMatrix` API surface exactly, then add a `Kernels` implementation and a
+`CorrelationCalculator` overload per calculator. Mirror `DoubleMatrixTest`
+completely, including the cross-type `equals` checks in both directions.
 
-- Git commit GPG signing fails under WSL ("Unusable secret key") — commit with
-  `--no-gpg-sign` from WSL, or sign from Windows.
-- The parallel code path only triggers when `n*p*p >= 2^18` — performance test
-  matrices must be at least that large to exercise it.
+### Touch a hot loop
+
+The reference-oracle tests are the safety net — they must keep passing for
+both the serial and parallel paths. If you change buffering or normalization,
+re-derive the memory accounting in the class javadoc
+(`PearsonCorrelationCalculator` documents the `NP + PP` budget) and keep the
+concurrency argument valid: parallel tasks may only write disjoint index sets.
+
+## Testing conventions
+
+- Naming: `method_Scenario_Expectation`
+  (`calculate_ZeroVarianceColumns_ReturnsNaNCorrelation`).
+- Test packages mirror main 1:1; a test class covers exactly the class it is
+  named after. Cross-package flows go in `CorrelationEndToEndTest` at the root.
+- Assertion arguments are `(expected, actual)` — expected value first. The one
+  sanctioned exception is documented in `FloatMatrixTest`: cross-type
+  `assertNotEquals` runs in both directions because JUnit calls `equals` on
+  the first argument and each matrix type's `equals` needs exercising.
+- Numerical correctness is proven against independent naive implementations
+  coded inside the test, on seeded (`new Random(42L)`-style) data — never
+  against values produced by the code under test.
+
+## Git
+
+- Commit style: conventional commits with scope, e.g. `feat(lib): ...`,
+  `refactor(lib): ...`, `docs(lib): ...`; body explains the why.
+- GPG signing fails under WSL ("Unusable secret key") — use
+  `git commit --no-gpg-sign` from WSL and say the commit is unsigned, or sign
+  from Windows.

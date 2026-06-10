@@ -68,10 +68,8 @@ ch.corrcalc.lib/
 - **Zero-variance columns** yield `NaN` coefficients (the value is undefined),
   with the diagonal staying `1`.
 
-## Extending
+## Contributing
 
-New correlation types (partial correlation is the next candidate) plug in as:
-
-1. a new constant in `CorrelationType`,
-2. a package-private implementation of `CorrelationCalculator`,
-3. a new arm in the `Correlations` factory.
+Step-by-step guides for extending the library (new correlation types, data
+preparation steps, storage types) and the project's invariants and testing
+conventions live in [CLAUDE.md](CLAUDE.md).
