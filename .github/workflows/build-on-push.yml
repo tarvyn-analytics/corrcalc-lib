@@ -8,7 +8,7 @@ env:
   MAVEN_OPTS: -Djava.security.egd=file:/dev/./urandom
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
@@ -44,6 +44,14 @@ jobs:
         run: ./mvnw --batch-mode -Ppublish clean deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag release
+        if: github.ref_name == 'main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(./mvnw --quiet help:evaluate -Dexpression=project.version -DforceStdout)
+          gh api "repos/${GITHUB_REPOSITORY}/git/refs" -f ref="refs/tags/v${VERSION}" -f sha="${GITHUB_SHA}"
 
       - name: Upload library jar
         uses: actions/upload-artifact@v7
