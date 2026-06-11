@@ -3,7 +3,8 @@ package ch.tarvynanalytics.corrcalc.lib.correlation;
 import ch.tarvynanalytics.corrcalc.lib.exception.InvalidInputException;
 import ch.tarvynanalytics.corrcalc.lib.matrix.DoubleMatrix;
 import ch.tarvynanalytics.corrcalc.lib.matrix.FloatMatrix;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.Random;
 
@@ -14,52 +15,54 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PearsonCorrelationCalculatorTest {
 
-    private final PearsonCorrelationCalculator calculator = new PearsonCorrelationCalculator();
-
-    @Test
-    void calculate_TwoPerfectlyCorrelatedColumns_ReturnsCorrelationOne() {
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_TwoPerfectlyCorrelatedColumns_ReturnsCorrelationOne(Profile profile) {
         DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, 2},
                 {2, 4},
                 {3, 6}
         });
-        double[][] result = calculator.calculate(input).toRowArrays();
+        double[][] result = calculator(profile).calculate(input).toRowArrays();
 
         assertArrayEquals(new double[]{1.0, 1.0}, result[0], 1e-9);
         assertArrayEquals(new double[]{1.0, 1.0}, result[1], 1e-9);
     }
 
-    @Test
-    void calculate_TwoPerfectlyNegativeCorrelatedColumns_ReturnsCorrelationMinusOne() {
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_TwoPerfectlyNegativeCorrelatedColumns_ReturnsCorrelationMinusOne(Profile profile) {
         DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, -1},
                 {2, -2},
                 {3, -3}
         });
-        double[][] result = calculator.calculate(input).toRowArrays();
+        double[][] result = calculator(profile).calculate(input).toRowArrays();
 
         assertEquals(-1.0, result[0][1], 1e-9);
         assertEquals(-1.0, result[1][0], 1e-9);
     }
 
-    @Test
-    void calculate_SingleColumn_ReturnsSingleOne() {
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_SingleColumn_ReturnsSingleOne(Profile profile) {
         DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{{5}, {5}, {5}});
-        DoubleMatrix result = calculator.calculate(input);
+        DoubleMatrix result = calculator(profile).calculate(input);
 
         assertEquals(1, result.rows());
         assertEquals(1, result.cols());
         assertEquals(1.0, result.get(0, 0), 1e-9);
     }
 
-    @Test
-    void calculate_ZeroVarianceColumns_ReturnsNaNCorrelation() {
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_ZeroVarianceColumns_ReturnsNaNCorrelation(Profile profile) {
         DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {2, 3},
                 {2, 3},
                 {2, 3}
         });
-        double[][] result = calculator.calculate(input).toRowArrays();
+        double[][] result = calculator(profile).calculate(input).toRowArrays();
 
         assertEquals(1.0, result[0][0], 1e-9);
         assertEquals(1.0, result[1][1], 1e-9);
@@ -67,27 +70,29 @@ class PearsonCorrelationCalculatorTest {
         assertTrue(Double.isNaN(result[1][0]));
     }
 
-    @Test
-    void calculate_IndependentColumns_ReturnsZeroCorrelation() {
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_IndependentColumns_ReturnsZeroCorrelation(Profile profile) {
         DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, 2},
                 {2, 1},
                 {3, 2}
         });
-        double[][] result = calculator.calculate(input).toRowArrays();
+        double[][] result = calculator(profile).calculate(input).toRowArrays();
 
         assertEquals(0.0, result[0][1], 1e-9);
         assertEquals(0.0, result[1][0], 1e-9);
     }
 
-    @Test
-    void calculate_ThreeColumnsMixedVariances_ReturnsCorrectCorrelations() {
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_ThreeColumnsMixedVariances_ReturnsCorrectCorrelations(Profile profile) {
         DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, 1, 3},
                 {1, 2, 2},
                 {1, 3, 1}
         });
-        double[][] result = calculator.calculate(input).toRowArrays();
+        double[][] result = calculator(profile).calculate(input).toRowArrays();
 
         // Check diagonal elements
         assertEquals(1.0, result[0][0], 1e-9);
@@ -105,22 +110,24 @@ class PearsonCorrelationCalculatorTest {
         assertEquals(-1.0, result[2][1], 1e-9);
     }
 
-    @Test
-    void calculate_TwoRowsTwoColumns_ComputesCorrectly() {
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_TwoRowsTwoColumns_ComputesCorrectly(Profile profile) {
         DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, 2},
                 {3, 4}
         });
-        double[][] result = calculator.calculate(input).toRowArrays();
+        double[][] result = calculator(profile).calculate(input).toRowArrays();
 
         assertEquals(1.0, result[0][1], 1e-9);
         assertEquals(1.0, result[1][0], 1e-9);
     }
 
-    @Test
-    void calculate_SingleRowInput_ReturnsNaNMatrix() {
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_SingleRowInput_ReturnsNaNMatrix(Profile profile) {
         DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{{5, 6}});
-        double[][] result = calculator.calculate(input).toRowArrays();
+        double[][] result = calculator(profile).calculate(input).toRowArrays();
 
         for (int i = 0; i < result.length; i++) {
             for (int j = 0; j < result[i].length; j++) {
@@ -133,8 +140,9 @@ class PearsonCorrelationCalculatorTest {
         }
     }
 
-    @Test
-    void calculate_KnownTextbookExample_MatchesHandComputedValue() {
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_KnownTextbookExample_MatchesHandComputedValue(Profile profile) {
         // r for x={1,2,3,4,5} vs y={2,1,4,3,7} computed by hand:
         // cov = 12/4 = 3.0, var_x = 10/4 = 2.5, var_y = 21.2/4 = 5.3
         // r = 3 / sqrt(2.5 * 5.3) = 0.824163...
@@ -145,34 +153,37 @@ class PearsonCorrelationCalculatorTest {
                 {4, 3},
                 {5, 7}
         });
-        double[][] result = calculator.calculate(input).toRowArrays();
+        double[][] result = calculator(profile).calculate(input).toRowArrays();
 
         double expected = 3.0 / Math.sqrt(2.5 * 5.3);
         assertEquals(expected, result[0][1], 1e-12);
         assertEquals(expected, result[1][0], 1e-12);
     }
 
-    @Test
-    void calculate_RandomSmallMatrix_MatchesNaiveReferenceImplementation() {
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_RandomSmallMatrix_MatchesNaiveReferenceImplementation(Profile profile) {
         DoubleMatrix input = randomMatrix(37, 7, 42L);
 
-        assertMatchesReference(input, calculator.calculate(input));
+        assertMatchesReference(input, calculator(profile).calculate(input));
     }
 
-    @Test
-    void calculate_LargeMatrixAboveParallelThreshold_MatchesNaiveReferenceImplementation() {
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_LargeMatrixAboveParallelThreshold_MatchesNaiveReferenceImplementation(Profile profile) {
         int n = 250;
         int p = 50;
         assertTrue((long) n * p * p >= PearsonCorrelationCalculator.PARALLEL_THRESHOLD_FLOPS,
                 "test matrix must be large enough to exercise the parallel path");
         DoubleMatrix input = randomMatrix(n, p, 4242L);
 
-        assertMatchesReference(input, calculator.calculate(input));
+        assertMatchesReference(input, calculator(profile).calculate(input));
     }
 
-    @Test
-    void calculate_RandomMatrix_ResultIsSymmetricWithUnitDiagonalAndBoundedValues() {
-        DoubleMatrix result = calculator.calculate(randomMatrix(64, 9, 7L));
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_RandomMatrix_ResultIsSymmetricWithUnitDiagonalAndBoundedValues(Profile profile) {
+        DoubleMatrix result = calculator(profile).calculate(randomMatrix(64, 9, 7L));
 
         assertEquals(9, result.rows());
         assertEquals(9, result.cols());
@@ -185,8 +196,9 @@ class PearsonCorrelationCalculatorTest {
         }
     }
 
-    @Test
-    void calculate_AffineTransformedColumns_ReturnsSameCorrelationMatrix() {
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_AffineTransformedColumns_ReturnsSameCorrelationMatrix(Profile profile) {
         DoubleMatrix original = randomMatrix(50, 5, 13L);
         DoubleMatrix transformed = original.copy();
         for (int j = 0; j < transformed.cols(); j++) {
@@ -197,39 +209,42 @@ class PearsonCorrelationCalculatorTest {
             }
         }
 
-        double[] expected = calculator.calculate(original).data();
-        double[] actual = calculator.calculate(transformed).data();
+        double[] expected = calculator(profile).calculate(original).data();
+        double[] actual = calculator(profile).calculate(transformed).data();
 
         assertArrayEquals(expected, actual, 1e-9);
     }
 
-    @Test
-    void calculate_EmptyInput_ThrowsInvalidInput() {
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_EmptyInput_ThrowsInvalidInput(Profile profile) {
         DoubleMatrix noRows = DoubleMatrix.columnMajor(new double[0], 0, 0);
-        assertThrows(InvalidInputException.class, () -> calculator.calculate(noRows));
+        assertThrows(InvalidInputException.class, () -> calculator(profile).calculate(noRows));
 
         DoubleMatrix noCols = DoubleMatrix.columnMajor(new double[0], 3, 0);
-        assertThrows(InvalidInputException.class, () -> calculator.calculate(noCols));
+        assertThrows(InvalidInputException.class, () -> calculator(profile).calculate(noCols));
     }
 
-    @Test
-    void calculate_InputMatrix_IsNotModified() {
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_InputMatrix_IsNotModified(Profile profile) {
         DoubleMatrix input = randomMatrix(20, 4, 99L);
         DoubleMatrix snapshot = input.copy();
 
-        calculator.calculate(input);
+        calculator(profile).calculate(input);
 
         assertEquals(snapshot, input);
     }
 
-    @Test
-    void calculate_FloatPerfectlyCorrelatedColumns_ReturnsCorrelationOne() {
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_FloatPerfectlyCorrelatedColumns_ReturnsCorrelationOne(Profile profile) {
         FloatMatrix input = FloatMatrix.fromRows(new float[][]{
                 {1, 2},
                 {2, 4},
                 {3, 6}
         });
-        FloatMatrix result = calculator.calculate(input);
+        FloatMatrix result = calculator(profile).calculate(input);
 
         assertEquals(2, result.rows());
         assertEquals(2, result.cols());
@@ -239,55 +254,64 @@ class PearsonCorrelationCalculatorTest {
         assertEquals(1.0f, result.get(1, 1), 0.0f);
     }
 
-    @Test
-    void calculate_FloatZeroVarianceColumn_ReturnsNaNCorrelation() {
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_FloatZeroVarianceColumn_ReturnsNaNCorrelation(Profile profile) {
         FloatMatrix input = FloatMatrix.fromRows(new float[][]{
                 {2, 1},
                 {2, 2},
                 {2, 3}
         });
-        FloatMatrix result = calculator.calculate(input);
+        FloatMatrix result = calculator(profile).calculate(input);
 
         assertEquals(1.0f, result.get(0, 0), 0.0f);
         assertTrue(Float.isNaN(result.get(0, 1)));
         assertTrue(Float.isNaN(result.get(1, 0)));
     }
 
-    @Test
-    void calculate_FloatRandomSmallMatrix_MatchesDoubleResultWithinFloatPrecision() {
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_FloatRandomSmallMatrix_MatchesDoubleResultWithinFloatPrecision(Profile profile) {
         DoubleMatrix input = randomMatrix(37, 7, 42L);
 
-        assertMatchesDoubleResult(input, calculator.calculate(floatCopyOf(input)));
+        assertMatchesDoubleResult(profile, input, calculator(profile).calculate(floatCopyOf(input)));
     }
 
-    @Test
-    void calculate_FloatLargeMatrixAboveParallelThreshold_MatchesDoubleResultWithinFloatPrecision() {
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_FloatLargeMatrixAboveParallelThreshold_MatchesDoubleResultWithinFloatPrecision(Profile profile) {
         int n = 250;
         int p = 50;
         assertTrue((long) n * p * p >= PearsonCorrelationCalculator.PARALLEL_THRESHOLD_FLOPS,
                 "test matrix must be large enough to exercise the parallel path");
         DoubleMatrix input = randomMatrix(n, p, 4242L);
 
-        assertMatchesDoubleResult(input, calculator.calculate(floatCopyOf(input)));
+        assertMatchesDoubleResult(profile, input, calculator(profile).calculate(floatCopyOf(input)));
     }
 
-    @Test
-    void calculate_FloatEmptyInput_ThrowsInvalidInput() {
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_FloatEmptyInput_ThrowsInvalidInput(Profile profile) {
         FloatMatrix noRows = FloatMatrix.columnMajor(new float[0], 0, 0);
-        assertThrows(InvalidInputException.class, () -> calculator.calculate(noRows));
+        assertThrows(InvalidInputException.class, () -> calculator(profile).calculate(noRows));
 
         FloatMatrix noCols = FloatMatrix.columnMajor(new float[0], 3, 0);
-        assertThrows(InvalidInputException.class, () -> calculator.calculate(noCols));
+        assertThrows(InvalidInputException.class, () -> calculator(profile).calculate(noCols));
     }
 
-    @Test
-    void calculate_FloatInputMatrix_IsNotModified() {
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_FloatInputMatrix_IsNotModified(Profile profile) {
         FloatMatrix input = floatCopyOf(randomMatrix(20, 4, 99L));
         FloatMatrix snapshot = input.copy();
 
-        calculator.calculate(input);
+        calculator(profile).calculate(input);
 
         assertEquals(snapshot, input);
+    }
+
+    private static PearsonCorrelationCalculator calculator(Profile profile) {
+        return (PearsonCorrelationCalculator) Correlations.pearson(profile);
     }
 
     private static DoubleMatrix randomMatrix(int rows, int cols, long seed) {
@@ -317,8 +341,8 @@ class PearsonCorrelationCalculatorTest {
         return result;
     }
 
-    private static void assertMatchesDoubleResult(DoubleMatrix input, FloatMatrix actual) {
-        DoubleMatrix expected = new PearsonCorrelationCalculator().calculate(input);
+    private static void assertMatchesDoubleResult(Profile profile, DoubleMatrix input, FloatMatrix actual) {
+        DoubleMatrix expected = calculator(profile).calculate(input);
         for (int i = 0; i < expected.rows(); i++) {
             for (int j = 0; j < expected.cols(); j++) {
                 assertEquals(expected.get(i, j), actual.get(i, j), 1e-5,

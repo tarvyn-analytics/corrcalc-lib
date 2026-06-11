@@ -31,7 +31,8 @@ DoubleMatrix fromFile = new CsvMatrixReader().read(inputStream, numRows, numCols
 var preparation = Preparers.pipeline(Preparers.imputeMean(), Preparers.standardize());
 DoubleMatrix prepared = preparation.prepare(data);
 
-// 3) Calculate the correlation matrix (p x p, symmetric, ones on the diagonal)
+// 3) Calculate the correlation matrix (p x p, symmetric, ones on the diagonal).
+//    Optionally pick a calculation profile (default: Profile.STANDARD)
 DoubleMatrix corr = Correlations.pearson().calculate(prepared);
 double r01 = corr.get(0, 1);
 ```
@@ -60,6 +61,11 @@ ch.tarvynanalytics.corrcalc.lib/
 - **Parallelism adjusts to the machine.** Both phases fan out across columns on
   the ForkJoin common pool (sized to the available cores) once the estimated
   work crosses a threshold; small inputs stay on the calling thread.
+- **Selectable calculation profiles.** `Correlations.pearson(Profile...)` picks
+  the implementation strategy. Every profile computes the same statistic and
+  passes the same test suite; they differ in inner-loop execution and JVM
+  requirements. `STANDARD` (the default) is the portable scalar baseline;
+  higher-performance profiles are added as they land.
 - **Single-precision variant.** `FloatMatrix` halves memory and data transfer;
   `Correlations.pearson().calculate(floatMatrix)` returns a `FloatMatrix` while
   all sums still accumulate in double precision.

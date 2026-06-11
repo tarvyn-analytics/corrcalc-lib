@@ -31,6 +31,35 @@ class CorrelationsTest {
     }
 
     @Test
+    void pearson_StandardProfile_ReturnsSameInstanceAsDefaultFactory() {
+        assertSame(Correlations.pearson(), Correlations.pearson(Profile.STANDARD));
+    }
+
+    @Test
+    void pearson_SameProfileTwice_ReturnsSharedInstance() {
+        for (Profile profile : Profile.values()) {
+            assertSame(Correlations.pearson(profile), Correlations.pearson(profile));
+        }
+    }
+
+    @Test
+    void pearson_NullProfile_ThrowsInvalidInput() {
+        assertThrows(InvalidInputException.class, () -> Correlations.pearson(null));
+    }
+
+    @Test
+    void of_PearsonTypeWithProfile_ReturnsSameInstanceAsProfiledPearsonFactory() {
+        assertSame(Correlations.pearson(Profile.STANDARD),
+                Correlations.of(CorrelationType.PEARSON, Profile.STANDARD));
+    }
+
+    @Test
+    void of_TypeWithNullProfile_ThrowsInvalidInput() {
+        assertThrows(InvalidInputException.class,
+                () -> Correlations.of(CorrelationType.PEARSON, null));
+    }
+
+    @Test
     void pearson_SimpleInput_CalculatesCorrelation() {
         DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, 2},
