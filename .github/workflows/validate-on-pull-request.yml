@@ -30,21 +30,14 @@ jobs:
 
       # -Ppublish builds the source and javadoc jars too, so a PR cannot
       # merge with javadoc errors that would break publishing on push.
-      # install (not verify) so the bench build below can resolve the lib.
+      # The reactor builds bench/ as well — the benchmark bit-rot guard.
       - name: Build, test and enforce coverage
-        run: ./mvnw --batch-mode -Ppublish clean install
-
-      # Bit-rot guard: bench/ is standalone and only ever run by hand, so
-      # this is the one place an API drift in the benchmarks would surface.
-      - name: Compile benchmarks
-        run: |
-          VERSION=$(./mvnw --quiet help:evaluate -Dexpression=project.version -DforceStdout)
-          ./mvnw --batch-mode -f bench/pom.xml -Dcorrcalc.version="${VERSION}" clean package
+        run: ./mvnw --batch-mode -Ppublish clean verify
 
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: jacoco-report
-          path: target/site/jacoco/
+          path: lib/target/site/jacoco/
           retention-days: 14

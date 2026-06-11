@@ -14,13 +14,17 @@ for the common tasks.
 ./mvnw test                  # tests only (faster iteration)
 ./mvnw test -Dtest=ClassName # single test class
 
-# JMH benchmarks (bench/ is standalone, NOT a reactor module — install the lib first)
-./mvnw -DskipTests install && ./mvnw -f bench/pom.xml clean package
+# JMH benchmarks (bench module builds with the reactor)
+./mvnw -DskipTests clean package
 java -jar bench/target/benchmarks.jar                              # full run, ~10 min
 java -jar bench/target/benchmarks.jar -p size=10000x100 -f 1 -wi 2 -i 3  # quick check
 ```
 
-Coverage report: `target/site/jacoco/index.html` (CSV next to it for scripting).
+Multi-module reactor: the root pom (`corrcalc-parent`) aggregates `lib/` (the
+published library) and `bench/` (JMH, never deployed). Version lives in the
+parent; `versions:set` at the root moves all modules together.
+
+Coverage report: `lib/target/site/jacoco/index.html` (CSV next to it for scripting).
 This is a library — there is no application to run; the tests are the
 executable spec.
 
@@ -161,5 +165,5 @@ hardware ever changes, history restarts and the `--runner` string changes).
   published. Official benchmark numbers come exclusively from the reference
   machine (see the hot-loop guide above): the README snapshot table is
   refreshed in perf-relevant PRs, the release table by the release skill.
-  PR validation compiles `bench/` as a bit-rot guard. No DB, no Docker —
-  keep it that way.
+  PR validation builds the whole reactor, so bench compile breakage
+  surfaces there. No DB, no Docker — keep it that way.

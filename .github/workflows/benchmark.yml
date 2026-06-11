@@ -36,17 +36,8 @@ jobs:
           java-version: 21
           cache: maven
 
-      - name: Resolve library version
-        id: version
-        run: |
-          VERSION=$(./mvnw --quiet help:evaluate -Dexpression=project.version -DforceStdout)
-          echo "full=${VERSION}" >> "$GITHUB_OUTPUT"
-
-      - name: Install library to the local repository
-        run: ./mvnw --batch-mode -DskipTests clean install
-
       - name: Build benchmarks
-        run: ./mvnw --batch-mode -f bench/pom.xml -Dcorrcalc.version=${{ steps.version.outputs.full }} clean package
+        run: ./mvnw --batch-mode -DskipTests clean package
 
       - name: Run JMH
         run: java -jar bench/target/benchmarks.jar -rf json -rff jmh-results.json
