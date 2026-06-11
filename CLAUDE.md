@@ -69,14 +69,32 @@ executable spec.
    multiply-adds, compare against a `PARALLEL_THRESHOLD_FLOPS`-style constant,
    and fan out across columns with the `columns(p, parallel)` ternary helper
    pattern (no `stream = stream.parallel()` reassignment — IntelliJ flags it).
-4. Add the factory method and `switch` arm in `Correlations` (singleton field,
-   like `PEARSON`).
+4. Add the factory method and `switch` arms in `Correlations`: a profile-less
+   overload delegating to `Profile.STANDARD` and a lazy per-profile singleton
+   via `computeIfAbsent` (see how Pearson does it — construction must stay
+   lazy so a profile with unmet JVM requirements only fails when requested).
 5. Tests (see conventions below): port the Pearson edge cases that apply
    (zero variance, single row/column, empty input throws), verify against a
    naive textbook implementation written inside the test on seeded random
    data — once below and once above the parallel threshold — and add float
    tests comparing against the double result with ~1e-5 tolerance.
 6. Mention the new type in README's package-structure comment if it changes.
+
+### Add a calculation profile
+
+1. Add the constant to `Profile` with javadoc stating its contract: what it
+   guarantees about accuracy and what it requires from the JVM. Constants
+   ship only together with their implementation — never as placeholders.
+2. Implement the profile as a pair of `Kernels` implementations (the
+   orchestration in the calculators is profile-agnostic) and wire them into
+   the `switch` in `Correlations#newPearson`. A profile whose JVM
+   requirements may be unmet must **fail fast on first request** with a
+   message naming the missing flag/module — never silently fall back.
+3. Tests come for free: the calculator test suites are parametrized with
+   `@EnumSource(Profile.class)`, so the new constant inherits the full oracle
+   suite. Add profile-specific tests only for its failure modes.
+4. Benchmark same-session A/B against `STANDARD` on the host (hot-loop guide
+   above) and document the numbers in the PR.
 
 ### Add a data preparation step
 

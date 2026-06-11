@@ -40,20 +40,29 @@ final class PearsonCorrelationCalculator implements CorrelationCalculator {
      */
     static final long PARALLEL_THRESHOLD_FLOPS = 1L << 18;
 
-    private static final Kernels<double[]> DOUBLE_KERNELS = new DoubleKernels();
-    private static final Kernels<float[]> FLOAT_KERNELS = new FloatKernels();
+    private final Kernels<double[]> doubleKernels;
+    private final Kernels<float[]> floatKernels;
+
+    /**
+     * The {@link Profile} chooses the kernels; the orchestration here is the
+     * same for every profile.
+     */
+    PearsonCorrelationCalculator(Kernels<double[]> doubleKernels, Kernels<float[]> floatKernels) {
+        this.doubleKernels = doubleKernels;
+        this.floatKernels = floatKernels;
+    }
 
     @Override
     public DoubleMatrix calculate(DoubleMatrix observations) {
         int p = observations.cols();
-        double[] corr = correlate(observations.data(), observations.rows(), p, DOUBLE_KERNELS);
+        double[] corr = correlate(observations.data(), observations.rows(), p, doubleKernels);
         return DoubleMatrix.columnMajor(corr, p, p);
     }
 
     @Override
     public FloatMatrix calculate(FloatMatrix observations) {
         int p = observations.cols();
-        float[] corr = correlate(observations.data(), observations.rows(), p, FLOAT_KERNELS);
+        float[] corr = correlate(observations.data(), observations.rows(), p, floatKernels);
         return FloatMatrix.columnMajor(corr, p, p);
     }
 
