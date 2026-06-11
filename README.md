@@ -111,6 +111,10 @@ If you develop inside WSL, build there but run the jar on the Windows host
 VM typically gets only half the logical CPUs plus virtualization overhead,
 which skews results by 40%+ and hits the float variant hardest.
 
+Add `-prof gc` to also measure memory: `gc.alloc.rate.norm` reports bytes
+allocated per calculation and should match the documented working-set budget
+(one `n·p` buffer plus the `p·p` result).
+
 Performance claims are only ever proven by same-machine, same-session A/B
 runs: benchmark the base branch and the change back to back — absolute
 numbers across machines or days are not comparable.

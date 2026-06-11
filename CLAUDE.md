@@ -19,7 +19,7 @@ for the common tasks.
 # overhead (~40-50% slower, float up to 2x on bandwidth-bound sizes).
 # Never mix WSL-run and host-run numbers in one comparison.
 ./mvnw -DskipTests clean package
-cmd.exe /c "java -jar corrcalc-lib-bench\target\benchmarks.jar"        # full run, ~10 min
+cmd.exe /c "java -jar corrcalc-lib-bench\target\benchmarks.jar -prof gc"   # full run, ~10 min
 cmd.exe /c "java -jar corrcalc-lib-bench\target\benchmarks.jar -p size=10000x100 -f 1 -wi 2 -i 3"  # quick check
 ```
 
@@ -111,11 +111,17 @@ absolute numbers are meaningless; only same-session deltas count. If the
 numbers moved, refresh the README development-snapshot table in the same PR:
 
 ```bash
-cmd.exe /c "java -jar corrcalc-lib-bench\target\benchmarks.jar -rf json -rff corrcalc-lib-bench\results\$(date +%F)-<version>.json"
+cmd.exe /c "java -jar corrcalc-lib-bench\target\benchmarks.jar -prof gc -rf json -rff corrcalc-lib-bench\results\$(date +%F)-<version>.json"
 python3 corrcalc-lib-bench/update_benchmark_readme.py corrcalc-lib-bench/results/<that-file>.json README.md \
   --section snapshot --version <version> --commit <short-sha> \
   --runner "Intel Core i7-6820HQ (8 threads, Windows host)"
 ```
+
+`-prof gc` adds memory accounting: `gc.alloc.rate.norm` must stay at the
+documented working-set budget of `(n·p + p·p) × element size` bytes per op
+(double 10000x100 ≈ 8.1 MB/op, float half that). Timings are noisy;
+allocation per op is deterministic — if it jumps, a hidden copy landed on
+the hot path.
 
 Commit the results JSON together with the README — `corrcalc-lib-bench/results/` is the
 benchmark history of the reference environment: the JMH jar always runs on
