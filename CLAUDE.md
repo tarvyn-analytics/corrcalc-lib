@@ -13,6 +13,11 @@ for the common tasks.
 ./mvnw clean verify          # full build: tests + coverage gates — run before claiming done
 ./mvnw test                  # tests only (faster iteration)
 ./mvnw test -Dtest=ClassName # single test class
+
+# JMH benchmarks (bench/ is standalone, NOT a reactor module — install the lib first)
+./mvnw -DskipTests install && ./mvnw -f bench/pom.xml clean package
+java -jar bench/target/benchmarks.jar                              # full run, ~10 min
+java -jar bench/target/benchmarks.jar -p size=10000x100 -f 1 -wi 2 -i 3  # quick check
 ```
 
 Coverage report: `target/site/jacoco/index.html` (CSV next to it for scripting).
@@ -91,6 +96,10 @@ both the serial and parallel paths. If you change buffering or normalization,
 re-derive the memory accounting in the class javadoc
 (`PearsonCorrelationCalculator` documents the `NP + PP` budget) and keep the
 concurrency argument valid: parallel tasks may only write disjoint index sets.
+Benchmark the change: run the JMH suite (see Commands) on the base branch and
+on yours in the same session — same machine, back to back — and put the
+before/after numbers in the PR description. Cross-machine or cross-day
+absolute numbers are meaningless; only same-session deltas count.
 
 ## Testing conventions
 
@@ -135,4 +144,9 @@ concurrency argument valid: parallel tasks may only write disjoint index sets.
   main strips the suffix, publishes the release and pushes the `vX.Y.Z`
   tag. The same release version
   cannot be published twice, so bump the version on develop before each
-  release merge to main. No DB, no Docker — keep it that way.
+  release merge to main. `benchmark.yml` runs the JMH suite twice a week on
+  develop (regression alerts against a cached per-branch baseline) and on
+  every push to main; after a release it commits the results table into the
+  README benchmark section on develop using the `BENCHMARK_PUSH_TOKEN`
+  secret (fine-grained PAT, contents read/write, from a user with the
+  branch-protection bypass allowance). No DB, no Docker — keep it that way.

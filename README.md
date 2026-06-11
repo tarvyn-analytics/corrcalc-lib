@@ -68,6 +68,38 @@ ch.tarvynanalytics.corrcalc.lib/
 - **Zero-variance columns** yield `NaN` coefficients (the value is undefined),
   with the diagonal staying `1`.
 
+## Benchmarks
+
+JMH benchmarks live in [`bench/`](bench/) (standalone module, never published —
+the library itself stays zero-dependency). The table below is refreshed
+automatically by the [benchmark workflow](.github/workflows/benchmark.yml)
+after each release; the same workflow also runs twice a week on `develop` and
+posts an alert when a benchmark regresses past its baseline.
+
+<!-- benchmark-results:start -->
+Development snapshot **v1.0.2-SNAPSHOT**, measured on 2026-06-10 with JDK 25
+on Intel Core i7-6820HQ (4 cores, WSL2). Average time per correlation matrix
+in **ms/op**, lower is better. Replaced with official release numbers by the
+benchmark workflow on the next release.
+
+| rows × cols | double | float |
+|---|---|---|
+| 1,000 × 10 | 0.08 | 0.08 |
+| 10,000 × 100 | 22.33 | 21.17 |
+| 100,000 × 100 | 269.06 | 232.77 |
+| 10,000 × 1,000 | 2,439.34 | 2,195.16 |
+<!-- benchmark-results:end -->
+
+Run locally (same machine, same session A/B comparisons are the meaningful
+ones — absolute numbers across machines are not comparable):
+
+```bash
+./mvnw -DskipTests install
+./mvnw -f bench/pom.xml clean package   # add -Dcorrcalc.version=... if the pom default lags
+java -jar bench/target/benchmarks.jar   # full run, ~10 min
+java -jar bench/target/benchmarks.jar -p size=10000x100 -f 1 -wi 2 -i 3   # quick check
+```
+
 ## Contributing
 
 Step-by-step guides for extending the library (new correlation types, data
