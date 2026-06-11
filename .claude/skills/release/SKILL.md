@@ -56,7 +56,29 @@ develop history again.
    Push steps 4+5 together directly to develop — the branch-protection
    bypass allowance covers maintainer pushes.
 
-6. **Verify**: the develop push publishes the new SNAPSHOT; check
+6. **Benchmark the release** on the reference machine (i7-6820HQ — official
+   numbers never come from CI) and record it in the README release table.
+   Build from the tag so the measured code is exactly what was published
+   (the tag's pom still says `X.Y.Z-SNAPSHOT`; only CI strips it):
+
+   ```bash
+   git checkout vX.Y.Z
+   ./mvnw --batch-mode -DskipTests clean install
+   ./mvnw --batch-mode -f bench/pom.xml -Dcorrcalc.version=X.Y.Z-SNAPSHOT clean package
+   java -jar bench/target/benchmarks.jar -rf json -rff bench/results/$(date +%F)-X.Y.Z.json
+   git checkout develop          # the results JSON is untracked and carries over
+   python3 bench/update_benchmark_readme.py bench/results/<that-file>.json README.md \
+     --section release --version X.Y.Z --commit "$(git rev-parse --short vX.Y.Z)" \
+     --runner "Intel Core i7-6820HQ (4 cores, WSL2)"
+   git add bench/results README.md
+   git commit -m "docs(bench): [COR-<n>]: record vX.Y.Z benchmark results"
+   git push
+   ```
+
+   Run it on an otherwise idle machine — close heavy apps first; the full
+   suite takes ~10 minutes.
+
+7. **Verify**: the develop push publishes the new SNAPSHOT; check
    `gh api "orgs/tarvyn-analytics/packages/maven/ch.tarvynanalytics.corrcalc.corrcalc-lib/versions" --jq '.[].name'`
    lists the release and the new SNAPSHOT, and `git ls-remote --tags origin`
    shows `vX.Y.Z`.

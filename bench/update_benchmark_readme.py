@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-"""Rewrite the README benchmark section from JMH JSON results.
+"""Rewrite a README benchmark section from JMH JSON results.
+
+Run locally on the reference machine — official numbers never come from CI.
 
 Usage:
-    update_benchmark_readme.py <jmh-results.json> <README.md> \
-        --version 1.0.2 --commit abc1234 --runner "GitHub Actions ubuntu-latest"
+    bench/update_benchmark_readme.py bench/results/<date>-<version>.json README.md \
+        --section release|snapshot --version 1.0.2 --commit abc1234 \
+        --runner "Intel Core i7-6820HQ (4 cores, WSL2)"
 
-Replaces everything between the <!-- benchmark-results:start --> and
-<!-- benchmark-results:end --> markers; fails if the markers are missing
+Replaces everything between the <!-- benchmark-<section>:start --> and
+<!-- benchmark-<section>:end --> markers; fails if the markers are missing
 so a silently broken README never gets committed.
 """
 
@@ -16,8 +19,7 @@ import json
 import re
 import sys
 
-START = "<!-- benchmark-results:start -->"
-END = "<!-- benchmark-results:end -->"
+CAPTIONS = {"release": "Release", "snapshot": "Development snapshot"}
 
 
 def cell(entries, method, size):
@@ -33,7 +35,7 @@ def cell(entries, method, size):
     return "—"
 
 
-def render(entries, version, commit, runner):
+def render(entries, section, version, commit, runner):
     sizes = sorted(
         {entry["params"]["size"] for entry in entries},
         key=lambda s: int(s.split("x")[0]) * int(s.split("x")[1]) ** 2,
@@ -45,7 +47,7 @@ def render(entries, version, commit, runner):
     jdk = entries[0].get("jdkVersion", "unknown JDK")
 
     lines = [
-        f"Release **v{version}** (`{commit}`), measured on "
+        f"{CAPTIONS[section]} **v{version}** (`{commit}`), measured on "
         f"{datetime.date.today().isoformat()} with JDK {jdk} on {runner}. "
         f"JMH average time per correlation matrix in **{unit}** "
         "(± 99.9% confidence interval), lower is better.",
@@ -67,6 +69,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("results")
     parser.add_argument("readme")
+    parser.add_argument("--section", required=True, choices=sorted(CAPTIONS))
     parser.add_argument("--version", required=True)
     parser.add_argument("--commit", required=True)
     parser.add_argument("--runner", required=True)
@@ -77,16 +80,19 @@ def main():
     if not entries:
         sys.exit("no benchmark entries in results file")
 
+    start = f"<!-- benchmark-{args.section}:start -->"
+    end = f"<!-- benchmark-{args.section}:end -->"
     with open(args.readme) as f:
         readme = f.read()
-    pattern = re.compile(re.escape(START) + ".*?" + re.escape(END), re.DOTALL)
+    pattern = re.compile(re.escape(start) + ".*?" + re.escape(end), re.DOTALL)
     if not pattern.search(readme):
-        sys.exit(f"markers {START} ... {END} not found in {args.readme}")
+        sys.exit(f"markers {start} ... {end} not found in {args.readme}")
 
-    section = f"{START}\n{render(entries, args.version, args.commit, args.runner)}\n{END}"
+    body = render(entries, args.section, args.version, args.commit, args.runner)
+    section = f"{start}\n{body}\n{end}"
     with open(args.readme, "w") as f:
         f.write(pattern.sub(lambda _: section, readme))
-    print(f"updated benchmark section in {args.readme}")
+    print(f"updated benchmark {args.section} section in {args.readme}")
 
 
 if __name__ == "__main__":

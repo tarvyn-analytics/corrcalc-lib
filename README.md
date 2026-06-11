@@ -71,27 +71,33 @@ ch.tarvynanalytics.corrcalc.lib/
 ## Benchmarks
 
 JMH benchmarks live in [`bench/`](bench/) (standalone module, never published —
-the library itself stays zero-dependency). The table below is refreshed
-automatically by the [benchmark workflow](.github/workflows/benchmark.yml)
-after each release; the same workflow also runs twice a week on `develop` and
-posts an alert when a benchmark regresses past its baseline.
+the library itself stays zero-dependency). All official numbers are measured
+on the project's reference machine; raw JMH JSON for every official run is
+versioned under [`bench/results/`](bench/results/). CI never produces
+published numbers (shared runners are too noisy); a manual-dispatch
+[workflow](.github/workflows/benchmark.yml) exists for sanity checks only.
 
-<!-- benchmark-results:start -->
-Development snapshot **v1.0.2-SNAPSHOT**, measured on 2026-06-10 with JDK 25
-on Intel Core i7-6820HQ (4 cores, WSL2). Average time per correlation matrix
-in **ms/op**, lower is better. Replaced with official release numbers by the
-benchmark workflow on the next release.
+### Latest release
+
+<!-- benchmark-release:start -->
+_No released version benchmarked yet — this table is filled as part of the
+release procedure._
+<!-- benchmark-release:end -->
+
+### Development snapshot
+
+<!-- benchmark-snapshot:start -->
+Development snapshot **v1.0.2-SNAPSHOT** (`00f4ee8`), measured on 2026-06-11 with JDK 25.0.1 on Intel Core i7-6820HQ (4 cores, WSL2). JMH average time per correlation matrix in **ms/op** (± 99.9% confidence interval), lower is better.
 
 | rows × cols | double | float |
 |---|---|---|
-| 1,000 × 10 | 0.08 | 0.08 |
-| 10,000 × 100 | 22.33 | 21.17 |
-| 100,000 × 100 | 269.06 | 232.77 |
-| 10,000 × 1,000 | 2,439.34 | 2,195.16 |
-<!-- benchmark-results:end -->
+| 1,000 × 10 | 0.09 ± 0.00 | 0.09 ± 0.01 |
+| 10,000 × 100 | 23.10 ± 1.26 | 20.34 ± 0.46 |
+| 100,000 × 100 | 293.02 ± 16.64 | 239.71 ± 25.61 |
+| 10,000 × 1,000 | 2,583.81 ± 795.28 | 2,244.18 ± 428.11 |
+<!-- benchmark-snapshot:end -->
 
-Run locally (same machine, same session A/B comparisons are the meaningful
-ones — absolute numbers across machines are not comparable):
+### Running them yourself
 
 ```bash
 ./mvnw -DskipTests install
@@ -99,6 +105,10 @@ ones — absolute numbers across machines are not comparable):
 java -jar bench/target/benchmarks.jar   # full run, ~10 min
 java -jar bench/target/benchmarks.jar -p size=10000x100 -f 1 -wi 2 -i 3   # quick check
 ```
+
+Performance claims are only ever proven by same-machine, same-session A/B
+runs: benchmark the base branch and the change back to back — absolute
+numbers across machines or days are not comparable.
 
 ## Contributing
 
