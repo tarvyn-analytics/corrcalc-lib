@@ -99,7 +99,19 @@ concurrency argument valid: parallel tasks may only write disjoint index sets.
 Benchmark the change: run the JMH suite (see Commands) on the base branch and
 on yours in the same session — same machine, back to back — and put the
 before/after numbers in the PR description. Cross-machine or cross-day
-absolute numbers are meaningless; only same-session deltas count.
+absolute numbers are meaningless; only same-session deltas count. If the
+numbers moved, refresh the README development-snapshot table in the same PR:
+
+```bash
+java -jar bench/target/benchmarks.jar -rf json -rff bench/results/$(date +%F)-<version>.json
+python3 bench/update_benchmark_readme.py bench/results/<that-file>.json README.md \
+  --section snapshot --version <version> --commit <short-sha> \
+  --runner "Intel Core i7-6820HQ (4 cores, WSL2)"
+```
+
+Commit the results JSON together with the README — `bench/results/` is the
+benchmark history of the reference machine (the i7-6820HQ above; if the
+hardware ever changes, history restarts and the `--runner` string changes).
 
 ## Testing conventions
 
@@ -144,9 +156,10 @@ absolute numbers are meaningless; only same-session deltas count.
   main strips the suffix, publishes the release and pushes the `vX.Y.Z`
   tag. The same release version
   cannot be published twice, so bump the version on develop before each
-  release merge to main. `benchmark.yml` runs the JMH suite twice a week on
-  develop (regression alerts against a cached per-branch baseline) and on
-  every push to main; after a release it commits the results table into the
-  README benchmark section on develop using the `BENCHMARK_PUSH_TOKEN`
-  secret (fine-grained PAT, contents read/write, from a user with the
-  branch-protection bypass allowance). No DB, no Docker — keep it that way.
+  release merge to main. `benchmark.yml` is **manual dispatch only** — a
+  sanity check on a hosted runner; its numbers are indicative and never
+  published. Official benchmark numbers come exclusively from the reference
+  machine (see the hot-loop guide above): the README snapshot table is
+  refreshed in perf-relevant PRs, the release table by the release skill.
+  PR validation compiles `bench/` as a bit-rot guard. No DB, no Docker —
+  keep it that way.
