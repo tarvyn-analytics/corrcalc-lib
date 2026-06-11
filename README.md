@@ -88,14 +88,14 @@ release procedure._
 ### Development snapshot
 
 <!-- benchmark-snapshot:start -->
-Development snapshot **v1.0.2-SNAPSHOT** (`00f4ee8`), measured on 2026-06-11 with JDK 25.0.1 on Intel Core i7-6820HQ (4 cores, WSL2). JMH average time per correlation matrix in **ms/op** (± 99.9% confidence interval), lower is better.
+Development snapshot **v1.0.2-SNAPSHOT** (`5d400cf`), measured on 2026-06-11 with JDK 25.0.1 on Intel Core i7-6820HQ (8 threads, Windows host). JMH average time per correlation matrix in **ms/op** (± 99.9% confidence interval), lower is better.
 
 | rows × cols | double | float |
 |---|---|---|
-| 1,000 × 10 | 0.09 ± 0.00 | 0.09 ± 0.01 |
-| 10,000 × 100 | 23.10 ± 1.26 | 20.34 ± 0.46 |
-| 100,000 × 100 | 293.02 ± 16.64 | 239.71 ± 25.61 |
-| 10,000 × 1,000 | 2,583.81 ± 795.28 | 2,244.18 ± 428.11 |
+| 1,000 × 10 | 0.09 ± 0.01 | 0.09 ± 0.01 |
+| 10,000 × 100 | 11.50 ± 0.23 | 11.05 ± 0.33 |
+| 100,000 × 100 | 293.08 ± 54.67 | 134.70 ± 13.09 |
+| 10,000 × 1,000 | 1,828.40 ± 317.82 | 1,233.40 ± 194.52 |
 <!-- benchmark-snapshot:end -->
 
 ### Running them yourself
@@ -105,6 +105,11 @@ Development snapshot **v1.0.2-SNAPSHOT** (`00f4ee8`), measured on 2026-06-11 wit
 java -jar corrcalc-lib-bench/target/benchmarks.jar   # full run, ~10 min
 java -jar corrcalc-lib-bench/target/benchmarks.jar -p size=10000x100 -f 1 -wi 2 -i 3   # quick check
 ```
+
+If you develop inside WSL, build there but run the jar on the Windows host
+(`cmd.exe /c "java -jar corrcalc-lib-bench\target\benchmarks.jar"`): the WSL2
+VM typically gets only half the logical CPUs plus virtualization overhead,
+which skews results by 40%+ and hits the float variant hardest.
 
 Performance claims are only ever proven by same-machine, same-session A/B
 runs: benchmark the base branch and the change back to back — absolute

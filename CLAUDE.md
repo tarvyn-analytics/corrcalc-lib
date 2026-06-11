@@ -14,10 +14,13 @@ for the common tasks.
 ./mvnw test                  # tests only (faster iteration)
 ./mvnw test -Dtest=ClassName # single test class
 
-# JMH benchmarks (bench module builds with the reactor)
+# JMH benchmarks: build in WSL, but RUN on the Windows host via interop —
+# the WSL2 VM only gets 4 of the host's 8 logical CPUs plus virtualization
+# overhead (~40-50% slower, float up to 2x on bandwidth-bound sizes).
+# Never mix WSL-run and host-run numbers in one comparison.
 ./mvnw -DskipTests clean package
-java -jar corrcalc-lib-bench/target/benchmarks.jar                              # full run, ~10 min
-java -jar corrcalc-lib-bench/target/benchmarks.jar -p size=10000x100 -f 1 -wi 2 -i 3  # quick check
+cmd.exe /c "java -jar corrcalc-lib-bench\target\benchmarks.jar"        # full run, ~10 min
+cmd.exe /c "java -jar corrcalc-lib-bench\target\benchmarks.jar -p size=10000x100 -f 1 -wi 2 -i 3"  # quick check
 ```
 
 Multi-module reactor: the root pom (`corrcalc-lib-parent`) aggregates
@@ -108,15 +111,17 @@ absolute numbers are meaningless; only same-session deltas count. If the
 numbers moved, refresh the README development-snapshot table in the same PR:
 
 ```bash
-java -jar corrcalc-lib-bench/target/benchmarks.jar -rf json -rff corrcalc-lib-bench/results/$(date +%F)-<version>.json
+cmd.exe /c "java -jar corrcalc-lib-bench\target\benchmarks.jar -rf json -rff corrcalc-lib-bench\results\$(date +%F)-<version>.json"
 python3 corrcalc-lib-bench/update_benchmark_readme.py corrcalc-lib-bench/results/<that-file>.json README.md \
   --section snapshot --version <version> --commit <short-sha> \
-  --runner "Intel Core i7-6820HQ (4 cores, WSL2)"
+  --runner "Intel Core i7-6820HQ (8 threads, Windows host)"
 ```
 
 Commit the results JSON together with the README — `corrcalc-lib-bench/results/` is the
-benchmark history of the reference machine (the i7-6820HQ above; if the
-hardware ever changes, history restarts and the `--runner` string changes).
+benchmark history of the reference environment: the JMH jar always runs on
+the Windows host (`cmd.exe` interop from WSL), never inside the WSL VM. If
+the hardware or OS ever changes, history restarts and the `--runner` string
+changes.
 
 ## Testing conventions
 
