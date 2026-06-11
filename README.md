@@ -88,14 +88,14 @@ release procedure._
 ### Development snapshot
 
 <!-- benchmark-snapshot:start -->
-Development snapshot **v1.0.2-SNAPSHOT** (`5d400cf`), measured on 2026-06-11 with JDK 25.0.1 on Intel Core i7-6820HQ (8 threads, Windows host). JMH average time per correlation matrix in **ms/op** (± 99.9% confidence interval), lower is better.
+Development snapshot **v1.0.2-SNAPSHOT** (`ff3c929`), measured on 2026-06-11 with JDK 25.0.1 on Intel Core i7-6820HQ (8 threads, Windows host). JMH average time per correlation matrix in **ms/op** (± 99.9% confidence interval) and heap allocated per calculation in **MB/op** (`gc.alloc.rate.norm`); lower is better.
 
-| rows × cols | double | float |
-|---|---|---|
-| 1,000 × 10 | 0.09 ± 0.01 | 0.09 ± 0.01 |
-| 10,000 × 100 | 11.50 ± 0.23 | 11.05 ± 0.33 |
-| 100,000 × 100 | 293.08 ± 54.67 | 134.70 ± 13.09 |
-| 10,000 × 1,000 | 1,828.40 ± 317.82 | 1,233.40 ± 194.52 |
+| rows × cols | double | float | double alloc | float alloc |
+|---|---|---|---|---|
+| 1,000 × 10 | 0.09 ± 0.00 | 0.08 ± 0.00 | 0.08 | 0.04 |
+| 10,000 × 100 | 12.74 ± 2.20 | 10.44 ± 0.12 | 8.09 | 4.05 |
+| 100,000 × 100 | 235.77 ± 10.15 | 122.88 ± 11.20 | 80.09 | 40.05 |
+| 10,000 × 1,000 | 1,672.47 ± 434.27 | 1,121.25 ± 123.65 | 88.01 | 44.01 |
 <!-- benchmark-snapshot:end -->
 
 ### Running them yourself
