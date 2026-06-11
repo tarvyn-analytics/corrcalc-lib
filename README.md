@@ -70,8 +70,9 @@ ch.tarvynanalytics.corrcalc.lib/
 
 ## Benchmarks
 
-JMH benchmarks live in [`bench/`](bench/) (standalone module, never published —
-the library itself stays zero-dependency). All official numbers are measured
+JMH benchmarks live in [`bench/`](bench/) (a reactor module that is never
+deployed — the published library pom stays zero-dependency). All official
+numbers are measured
 on the project's reference machine; raw JMH JSON for every official run is
 versioned under [`bench/results/`](bench/results/). CI never produces
 published numbers (shared runners are too noisy); a manual-dispatch
@@ -100,8 +101,7 @@ Development snapshot **v1.0.2-SNAPSHOT** (`00f4ee8`), measured on 2026-06-11 wit
 ### Running them yourself
 
 ```bash
-./mvnw -DskipTests install
-./mvnw -f bench/pom.xml clean package   # add -Dcorrcalc.version=... if the pom default lags
+./mvnw -DskipTests clean package
 java -jar bench/target/benchmarks.jar   # full run, ~10 min
 java -jar bench/target/benchmarks.jar -p size=10000x100 -f 1 -wi 2 -i 3   # quick check
 ```

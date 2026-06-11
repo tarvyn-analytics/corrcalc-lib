@@ -58,13 +58,11 @@ develop history again.
 
 6. **Benchmark the release** on the reference machine (i7-6820HQ — official
    numbers never come from CI) and record it in the README release table.
-   Build from the tag so the measured code is exactly what was published
-   (the tag's pom still says `X.Y.Z-SNAPSHOT`; only CI strips it):
+   Build from the tag so the measured code is exactly what was published:
 
    ```bash
    git checkout vX.Y.Z
-   ./mvnw --batch-mode -DskipTests clean install
-   ./mvnw --batch-mode -f bench/pom.xml -Dcorrcalc.version=X.Y.Z-SNAPSHOT clean package
+   ./mvnw --batch-mode -DskipTests clean package
    java -jar bench/target/benchmarks.jar -rf json -rff bench/results/$(date +%F)-X.Y.Z.json
    git checkout develop          # the results JSON is untracked and carries over
    python3 bench/update_benchmark_readme.py bench/results/<that-file>.json README.md \

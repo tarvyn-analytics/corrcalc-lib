@@ -2,30 +2,31 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>ch.tarvynanalytics.corrcalc</groupId>
+    <parent>
+        <groupId>ch.tarvynanalytics.corrcalc</groupId>
+        <artifactId>corrcalc-parent</artifactId>
+        <version>1.0.2-SNAPSHOT</version>
+    </parent>
     <artifactId>corrcalc-bench</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>corrcalc bench</name>
-    <description>JMH benchmarks for corrcalc-lib. Standalone on purpose: not a reactor
-        module and never published, so the library keeps its zero-dependency pom.
-        Build the library into the local repository first (./mvnw -DskipTests install),
-        then build this with -Dcorrcalc.version matching the library pom.</description>
+    <description>JMH benchmarks for corrcalc-lib. Built with the reactor but never
+        deployed; the library keeps its zero-dependency pom. Run with
+        java -jar bench/target/benchmarks.jar</description>
 
     <properties>
-        <maven.compiler.release>21</maven.compiler.release>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!-- Override from the command line when the library version moves on:
-             ./mvnw -f bench/pom.xml -Dcorrcalc.version=... clean package -->
-        <corrcalc.version>1.0.2-SNAPSHOT</corrcalc.version>
         <jmh.version>1.37</jmh.version>
+        <!-- benchmarks are internal tooling, never published -->
+        <maven.deploy.skip>true</maven.deploy.skip>
+        <!-- no tests here, ever — keeps root-level `mvnw test -Dtest=X` working -->
+        <maven.test.skip>true</maven.test.skip>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>ch.tarvynanalytics.corrcalc</groupId>
             <artifactId>corrcalc-lib</artifactId>
-            <version>${corrcalc.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.openjdk.jmh</groupId>
@@ -40,7 +41,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.14.0</version>
                 <configuration>
                     <annotationProcessorPaths>
                         <path>
