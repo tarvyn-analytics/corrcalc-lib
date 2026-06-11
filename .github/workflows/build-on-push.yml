@@ -40,8 +40,8 @@ jobs:
         if: github.ref_name == 'main'
         run: ./mvnw --batch-mode versions:set -DremoveSnapshot -DgenerateBackupPoms=false
 
-      # Deploys corrcalc-parent (consumers resolve it as corrcalc-lib's
-      # parent pom) and corrcalc-lib; bench sets maven.deploy.skip.
+      # Deploys corrcalc-lib-parent (consumers resolve it as corrcalc-lib-core's
+      # parent pom) and corrcalc-lib-core; bench sets maven.deploy.skip.
       - name: Build, test, enforce coverage and publish to GitHub Packages
         run: ./mvnw --batch-mode -Ppublish clean deploy
         env:
@@ -58,6 +58,6 @@ jobs:
       - name: Upload library jar
         uses: actions/upload-artifact@v7
         with:
-          name: corrcalc-lib
-          path: lib/target/corrcalc-lib-*.jar
+          name: corrcalc-lib-core
+          path: corrcalc-lib-core/target/corrcalc-lib-core-*.jar
           retention-days: 30

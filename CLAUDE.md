@@ -16,15 +16,16 @@ for the common tasks.
 
 # JMH benchmarks (bench module builds with the reactor)
 ./mvnw -DskipTests clean package
-java -jar bench/target/benchmarks.jar                              # full run, ~10 min
-java -jar bench/target/benchmarks.jar -p size=10000x100 -f 1 -wi 2 -i 3  # quick check
+java -jar corrcalc-lib-bench/target/benchmarks.jar                              # full run, ~10 min
+java -jar corrcalc-lib-bench/target/benchmarks.jar -p size=10000x100 -f 1 -wi 2 -i 3  # quick check
 ```
 
-Multi-module reactor: the root pom (`corrcalc-parent`) aggregates `lib/` (the
-published library) and `bench/` (JMH, never deployed). Version lives in the
-parent; `versions:set` at the root moves all modules together.
+Multi-module reactor: the root pom (`corrcalc-lib-parent`) aggregates
+`corrcalc-lib-core/` (the published library) and `corrcalc-lib-bench/` (JMH,
+never deployed); module directories equal their artifactIds. Version lives in
+the parent; `versions:set` at the root moves all modules together.
 
-Coverage report: `lib/target/site/jacoco/index.html` (CSV next to it for scripting).
+Coverage report: `corrcalc-lib-core/target/site/jacoco/index.html` (CSV next to it for scripting).
 This is a library — there is no application to run; the tests are the
 executable spec.
 
@@ -107,13 +108,13 @@ absolute numbers are meaningless; only same-session deltas count. If the
 numbers moved, refresh the README development-snapshot table in the same PR:
 
 ```bash
-java -jar bench/target/benchmarks.jar -rf json -rff bench/results/$(date +%F)-<version>.json
-python3 bench/update_benchmark_readme.py bench/results/<that-file>.json README.md \
+java -jar corrcalc-lib-bench/target/benchmarks.jar -rf json -rff corrcalc-lib-bench/results/$(date +%F)-<version>.json
+python3 corrcalc-lib-bench/update_benchmark_readme.py corrcalc-lib-bench/results/<that-file>.json README.md \
   --section snapshot --version <version> --commit <short-sha> \
   --runner "Intel Core i7-6820HQ (4 cores, WSL2)"
 ```
 
-Commit the results JSON together with the README — `bench/results/` is the
+Commit the results JSON together with the README — `corrcalc-lib-bench/results/` is the
 benchmark history of the reference machine (the i7-6820HQ above; if the
 hardware ever changes, history restarts and the `--runner` string changes).
 

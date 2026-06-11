@@ -3,7 +3,7 @@ name: benchmark
 # Manual dispatch only. Hosted runners are shared, unpinned hardware, so the
 # numbers here are indicative — useful for a quick sanity check, never
 # published anywhere. Official numbers come from the reference machine via
-# bench/update_benchmark_readme.py (see the Benchmarks section in README.md).
+# corrcalc-lib-bench/update_benchmark_readme.py (see the Benchmarks section in README.md).
 
 on:
   workflow_dispatch:
@@ -40,7 +40,7 @@ jobs:
         run: ./mvnw --batch-mode -DskipTests clean package
 
       - name: Run JMH
-        run: java -jar bench/target/benchmarks.jar -rf json -rff jmh-results.json
+        run: java -jar corrcalc-lib-bench/target/benchmarks.jar -rf json -rff jmh-results.json
 
       - name: Upload raw results
         uses: actions/upload-artifact@v7

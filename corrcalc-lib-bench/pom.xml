@@ -4,15 +4,15 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>ch.tarvynanalytics.corrcalc</groupId>
-        <artifactId>corrcalc-parent</artifactId>
+        <artifactId>corrcalc-lib-parent</artifactId>
         <version>1.0.2-SNAPSHOT</version>
     </parent>
-    <artifactId>corrcalc-bench</artifactId>
+    <artifactId>corrcalc-lib-bench</artifactId>
     <packaging>jar</packaging>
-    <name>corrcalc bench</name>
-    <description>JMH benchmarks for corrcalc-lib. Built with the reactor but never
-        deployed; the library keeps its zero-dependency pom. Run with
-        java -jar bench/target/benchmarks.jar</description>
+    <name>corrcalc lib bench</name>
+    <description>JMH benchmarks for corrcalc-lib-core. Built with the reactor but
+        never deployed; the library keeps its zero-dependency pom. Run with
+        java -jar corrcalc-lib-bench/target/benchmarks.jar</description>
 
     <properties>
         <jmh.version>1.37</jmh.version>
@@ -25,7 +25,7 @@
     <dependencies>
         <dependency>
             <groupId>ch.tarvynanalytics.corrcalc</groupId>
-            <artifactId>corrcalc-lib</artifactId>
+            <artifactId>corrcalc-lib-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
