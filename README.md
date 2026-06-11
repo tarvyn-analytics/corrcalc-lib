@@ -70,11 +70,11 @@ ch.tarvynanalytics.corrcalc.lib/
 
 ## Benchmarks
 
-JMH benchmarks live in [`bench/`](bench/) (a reactor module that is never
-deployed — the published library pom stays zero-dependency). All official
-numbers are measured
+JMH benchmarks live in [`corrcalc-lib-bench/`](corrcalc-lib-bench/) (a
+reactor module that is never deployed — the published library pom stays
+zero-dependency). All official numbers are measured
 on the project's reference machine; raw JMH JSON for every official run is
-versioned under [`bench/results/`](bench/results/). CI never produces
+versioned under [`corrcalc-lib-bench/results/`](corrcalc-lib-bench/results/). CI never produces
 published numbers (shared runners are too noisy); a manual-dispatch
 [workflow](.github/workflows/benchmark.yml) exists for sanity checks only.
 
@@ -102,8 +102,8 @@ Development snapshot **v1.0.2-SNAPSHOT** (`00f4ee8`), measured on 2026-06-11 wit
 
 ```bash
 ./mvnw -DskipTests clean package
-java -jar bench/target/benchmarks.jar   # full run, ~10 min
-java -jar bench/target/benchmarks.jar -p size=10000x100 -f 1 -wi 2 -i 3   # quick check
+java -jar corrcalc-lib-bench/target/benchmarks.jar   # full run, ~10 min
+java -jar corrcalc-lib-bench/target/benchmarks.jar -p size=10000x100 -f 1 -wi 2 -i 3   # quick check
 ```
 
 Performance claims are only ever proven by same-machine, same-session A/B

@@ -39,5 +39,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: jacoco-report
-          path: lib/target/site/jacoco/
+          path: corrcalc-lib-core/target/site/jacoco/
           retention-days: 14

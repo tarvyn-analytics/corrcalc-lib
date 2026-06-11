@@ -4,12 +4,12 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>ch.tarvynanalytics.corrcalc</groupId>
-        <artifactId>corrcalc-parent</artifactId>
+        <artifactId>corrcalc-lib-parent</artifactId>
         <version>1.0.2-SNAPSHOT</version>
     </parent>
-    <artifactId>corrcalc-lib</artifactId>
+    <artifactId>corrcalc-lib-core</artifactId>
     <packaging>jar</packaging>
-    <name>corrcalc lib</name>
+    <name>corrcalc lib core</name>
     <description>Pure Java library for calculating correlation matrices from numerical datasets</description>
 
     <dependencies>

@@ -4,7 +4,7 @@
 Run locally on the reference machine — official numbers never come from CI.
 
 Usage:
-    bench/update_benchmark_readme.py bench/results/<date>-<version>.json README.md \
+    corrcalc-lib-bench/update_benchmark_readme.py corrcalc-lib-bench/results/<date>-<version>.json README.md \
         --section release|snapshot --version 1.0.2 --commit abc1234 \
         --runner "Intel Core i7-6820HQ (4 cores, WSL2)"
 

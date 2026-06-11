@@ -3,17 +3,17 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>ch.tarvynanalytics.corrcalc</groupId>
-    <artifactId>corrcalc-parent</artifactId>
+    <artifactId>corrcalc-lib-parent</artifactId>
     <version>1.0.2-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>corrcalc parent</name>
+    <name>corrcalc lib parent</name>
     <description>Aggregator and parent for the corrcalc library and its benchmarks.
-        This pom is published to GitHub Packages too: the corrcalc-lib pom
+        This pom is published to GitHub Packages too: the corrcalc-lib-core pom
         references it as parent, so consumers must be able to resolve it.</description>
 
     <modules>
-        <module>lib</module>
-        <module>bench</module>
+        <module>corrcalc-lib-core</module>
+        <module>corrcalc-lib-bench</module>
     </modules>
 
     <properties>
