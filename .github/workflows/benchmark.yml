@@ -1,0 +1,130 @@
+name: benchmark
+
+# Three triggers, two purposes:
+#  - push to main (i.e. a release): measure the released code and publish the
+#    results table into README.md on develop (the default branch, so the repo
+#    front page always shows the latest release numbers).
+#  - schedule + workflow_dispatch on develop: regression tracking. Results are
+#    compared against the cached baseline of the same branch and an alert
+#    comment is posted when a benchmark slows past the threshold. Twice a week
+#    keeps the actions cache (7-day eviction) from losing the baseline.
+# Hosted runners are shared hardware, so thresholds are deliberately loose;
+# treat alerts as a prompt to re-measure locally, not as proof of a regression.
+
+on:
+  push:
+    branches: [ "main" ]
+  schedule:
+    - cron: "0 5 * * 1,4"
+  workflow_dispatch:
+
+env:
+  MAVEN_OPTS: -Djava.security.egd=file:/dev/./urandom
+
+permissions:
+  contents: write
+
+concurrency:
+  group: benchmark-${{ github.ref }}
+
+jobs:
+  benchmark:
+    name: Run JMH benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Resolve library version
+        id: version
+        run: |
+          VERSION=$(./mvnw --quiet help:evaluate -Dexpression=project.version -DforceStdout)
+          echo "full=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "release=${VERSION%-SNAPSHOT}" >> "$GITHUB_OUTPUT"
+
+      - name: Install library to the local repository
+        run: ./mvnw --batch-mode -DskipTests clean install
+
+      - name: Build benchmarks
+        run: ./mvnw --batch-mode -f bench/pom.xml -Dcorrcalc.version=${{ steps.version.outputs.full }} clean package
+
+      - name: Run JMH
+        run: java -jar bench/target/benchmarks.jar -rf json -rff jmh-results.json
+
+      - name: Upload raw results
+        uses: actions/upload-artifact@v7
+        with:
+          name: jmh-results
+          path: jmh-results.json
+          retention-days: 90
+
+      # Baseline lives in the actions cache, keyed per branch; caches are
+      # immutable, so save under a fresh key and restore the newest prefix
+      # match. No gh-pages involved (private repo).
+      - name: Restore benchmark baseline
+        uses: actions/cache/restore@v4
+        with:
+          path: benchmark-baseline
+          key: benchmark-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: benchmark-${{ github.ref_name }}-
+
+      - name: Compare against baseline and alert on regression
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: jmh
+          output-file-path: jmh-results.json
+          external-data-json-path: benchmark-baseline/data.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          alert-threshold: 140%
+          comment-on-alert: true
+          fail-on-alert: false
+          summary-always: true
+          max-items-in-chart: 100
+
+      - name: Save benchmark baseline
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: benchmark-baseline
+          key: benchmark-${{ github.ref_name }}-${{ github.run_id }}
+
+      # Branch protection blocks the workflow token, so the push uses a
+      # fine-grained PAT (contents read/write) from a user with the
+      # pull-request bypass allowance, stored as BENCHMARK_PUSH_TOKEN.
+      # [skip ci] keeps build-on-push from republishing the SNAPSHOT.
+      - name: Publish results to README on develop
+        if: github.ref_name == 'main'
+        env:
+          TOKEN: ${{ secrets.BENCHMARK_PUSH_TOKEN }}
+          VERSION: ${{ steps.version.outputs.release }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::warning::BENCHMARK_PUSH_TOKEN secret is not set; skipping README update"
+            exit 0
+          fi
+          git clone --depth 1 --branch develop \
+            "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" readme-update
+          python3 .github/scripts/update_benchmark_readme.py jmh-results.json readme-update/README.md \
+            --version "$VERSION" \
+            --commit "${GITHUB_SHA::7}" \
+            --runner "GitHub Actions ubuntu-latest"
+          cd readme-update
+          if git diff --quiet; then
+            echo "README benchmark section unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "docs(bench): publish benchmark results for v${VERSION} [skip ci]"
+          git push origin develop
