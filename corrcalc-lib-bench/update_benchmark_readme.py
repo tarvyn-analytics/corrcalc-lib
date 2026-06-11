@@ -22,17 +22,32 @@ import sys
 CAPTIONS = {"release": "Release", "snapshot": "Development snapshot"}
 
 
-def cell(entries, method, size):
+def find(entries, method, size):
     for entry in entries:
         if entry["benchmark"].endswith(method) and entry["params"]["size"] == size:
-            metric = entry["primaryMetric"]
-            score = f'{metric["score"]:,.2f}'
-            error = metric.get("scoreError")
-            # JMH writes the literal string "NaN" when iterations are too few
-            if isinstance(error, (int, float)) and error == error:
-                score += f" ± {error:,.2f}"
-            return score
-    return "—"
+            return entry
+    return None
+
+
+def time_cell(entry):
+    if entry is None:
+        return "—"
+    metric = entry["primaryMetric"]
+    score = f'{metric["score"]:,.2f}'
+    error = metric.get("scoreError")
+    # JMH writes the literal string "NaN" when iterations are too few
+    if isinstance(error, (int, float)) and error == error:
+        score += f" ± {error:,.2f}"
+    return score
+
+
+def alloc_cell(entry):
+    if entry is None:
+        return "—"
+    metric = entry.get("secondaryMetrics", {}).get("gc.alloc.rate.norm")
+    if metric is None:
+        return "—"
+    return f'{metric["score"] / 1e6:,.2f}'
 
 
 def render(entries, section, version, commit, runner):
@@ -50,17 +65,20 @@ def render(entries, section, version, commit, runner):
         f"{CAPTIONS[section]} **v{version}** (`{commit}`), measured on "
         f"{datetime.date.today().isoformat()} with JDK {jdk} on {runner}. "
         f"JMH average time per correlation matrix in **{unit}** "
-        "(± 99.9% confidence interval), lower is better.",
+        "(± 99.9% confidence interval) and heap allocated per calculation "
+        "in **MB/op** (`gc.alloc.rate.norm`); lower is better.",
         "",
-        "| rows × cols | double | float |",
-        "|---|---|---|",
+        "| rows × cols | double | float | double alloc | float alloc |",
+        "|---|---|---|---|---|",
     ]
     for size in sizes:
         rows, cols = size.split("x")
+        d = find(entries, ".pearsonDouble", size)
+        f = find(entries, ".pearsonFloat", size)
         lines.append(
             f"| {int(rows):,} × {int(cols):,} "
-            f"| {cell(entries, '.pearsonDouble', size)} "
-            f"| {cell(entries, '.pearsonFloat', size)} |"
+            f"| {time_cell(d)} | {time_cell(f)} "
+            f"| {alloc_cell(d)} | {alloc_cell(f)} |"
         )
     return "\n".join(lines)
 
