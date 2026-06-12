@@ -65,7 +65,8 @@ ch.tarvynanalytics.corrcalc.lib/
   the implementation strategy. Every profile computes the same statistic and
   passes the same test suite; they differ in inner-loop execution and JVM
   requirements. `STANDARD` (the default) is the portable scalar baseline;
-  higher-performance profiles are added as they land.
+  `HIGH_PERFORMANCE` uses 4x4 register-blocked tiles (up to ~2.6x double /
+  ~1.7x float on large inputs, same accuracy class, no JVM flags).
 - **Single-precision variant.** `FloatMatrix` halves memory and data transfer;
   `Correlations.pearson().calculate(floatMatrix)` returns a `FloatMatrix` while
   all sums still accumulate in double precision.

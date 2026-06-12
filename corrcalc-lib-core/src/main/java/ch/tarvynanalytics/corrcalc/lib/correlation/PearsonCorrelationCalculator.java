@@ -20,6 +20,9 @@ import java.util.stream.IntStream;
  * Memory consumption on top of the input and the output:
  * <ol>
  *     <li>normalized working copy — N*P of the element type</li>
+ *     <li>one {@code tileSize^2} double scratch block per column-tile task —
+ *     at most {@code (P/tileSize) * tileSize^2 * 8} transient bytes, negligible
+ *     against N*P</li>
  * </ol>
  * <b>TOTAL = {@code NP + PP} elements held at once (plus the input)</b> — half the
  * bytes for the {@link FloatMatrix} variant, whose sums still accumulate in double.
@@ -82,15 +85,36 @@ final class PearsonCorrelationCalculator implements CorrelationCalculator {
         columns(p, parallel).forEach(col -> kernels.normalizeColumn(src, normalized, n, col));
 
         A corr = kernels.allocate(Math.multiplyExact(p, p));
-        columns(p, parallel).forEach(varJ -> {
-            // each varJ writes a disjoint set of cells: the pairs in which it is
-            // the larger index, mirrored across the diagonal — safe to run concurrently
-            kernels.set(corr, varJ * p + varJ, 1.0);
-            int offsetJ = varJ * n;
-            for (int varI = 0; varI < varJ; varI++) {
-                double r = kernels.dot(normalized, varI * n, offsetJ, n);
-                kernels.set(corr, varJ * p + varI, r);
-                kernels.set(corr, varI * p + varJ, r);
+        int tile = kernels.tileSize();
+        int tileCount = (p + tile - 1) / tile;
+        columns(tileCount, parallel).forEach(tileJ -> {
+            // each tileJ writes a disjoint set of cells: the pairs whose larger
+            // column index falls in this tile, mirrored across the diagonal —
+            // safe to run concurrently
+            int colJ0 = tileJ * tile;
+            int countJ = Math.min(tile, p - colJ0);
+            for (int jj = 0; jj < countJ; jj++) {
+                int j = colJ0 + jj;
+                kernels.set(corr, j * p + j, 1.0);
+            }
+            double[] dots = new double[tile * tile];
+            for (int tileI = 0; tileI <= tileJ; tileI++) {
+                if (tileI == tileJ && countJ == 1) {
+                    continue; // a 1x1 diagonal tile would only compute the self-dot
+                }
+                int colI0 = tileI * tile;
+                int countI = Math.min(tile, p - colI0);
+                kernels.dotTile(normalized, n, colI0, countI, colJ0, countJ, dots);
+                for (int jj = 0; jj < countJ; jj++) {
+                    int j = colJ0 + jj;
+                    int upToII = tileI == tileJ ? jj : countI;
+                    for (int ii = 0; ii < upToII; ii++) {
+                        int i = colI0 + ii;
+                        double r = dots[ii * countJ + jj];
+                        kernels.set(corr, j * p + i, r);
+                        kernels.set(corr, i * p + j, r);
+                    }
+                }
             }
         });
         return corr;

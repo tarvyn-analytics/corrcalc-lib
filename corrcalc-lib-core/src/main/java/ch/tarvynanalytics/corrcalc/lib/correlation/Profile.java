@@ -17,5 +17,14 @@ public enum Profile {
      * across columns, with every sum accumulating in double — also on the
      * single-precision path. No special JVM requirements.
      */
-    STANDARD
+    STANDARD,
+
+    /**
+     * 4x4 register-blocked tiles: each loaded value is reused four times,
+     * cutting memory traffic ~4x on bandwidth-bound inputs. Accumulation
+     * stays in double, the memory budget is unchanged, and no special JVM
+     * requirements apply; results differ from {@link #STANDARD} only by
+     * floating-point summation order (last-ulp).
+     */
+    HIGH_PERFORMANCE
 }
