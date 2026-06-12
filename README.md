@@ -3,7 +3,9 @@
 A pure Java library for calculating correlation matrices from numerical datasets.
 Zero runtime dependencies, built for speed and low memory overhead.
 
-**Tech stack:** Java 21+, Maven, JUnit 5, JaCoCo (80% line / 70% branch minimum, enforced by the build).
+**Tech stack:** Java 21+ at runtime (the optional `VECTORIZED` profile needs
+25+), JDK 25 to build, Maven, JUnit 5, JaCoCo (80% line / 70% branch minimum,
+enforced by the build).
 
 ## Quick start
 
@@ -66,7 +68,11 @@ ch.tarvynanalytics.corrcalc.lib/
   passes the same test suite; they differ in inner-loop execution and JVM
   requirements. `STANDARD` (the default) is the portable scalar baseline;
   `HIGH_PERFORMANCE` uses 4x4 register-blocked tiles (up to ~2.6x double /
-  ~1.7x float on large inputs, same accuracy class, no JVM flags).
+  ~1.7x float on large inputs, same accuracy class, no JVM flags);
+  `VECTORIZED` adds explicit SIMD+FMA via the incubator Vector API and
+  **requires a Java 25+ JVM started with
+  `--add-modules jdk.incubator.vector`** — requesting it without that fails
+  fast, never falls back silently.
 - **Single-precision variant.** `FloatMatrix` halves memory and data transfer;
   `Correlations.pearson().calculate(floatMatrix)` returns a `FloatMatrix` while
   all sums still accumulate in double precision.
@@ -95,32 +101,41 @@ release procedure._
 ### Development snapshot
 
 <!-- benchmark-snapshot:start -->
-Development snapshot **v1.0.2-SNAPSHOT** (`cb03ddc`), measured on 2026-06-12 with JDK 25.0.1 on Intel Core i7-6820HQ (8 threads, Windows host). JMH average time per correlation matrix in **ms/op** (± 99.9% confidence interval) and heap allocated per calculation in **MB/op** (`gc.alloc.rate.norm`); lower is better.
+Development snapshot **v1.0.2-SNAPSHOT** (`6ecae55`), measured on 2026-06-12 with JDK 25.0.1 on Intel Core i7-6820HQ (8 threads, Windows host). JMH average time per correlation matrix in **ms/op** (± 99.9% confidence interval) and heap allocated per calculation in **MB/op** (`gc.alloc.rate.norm`); lower is better.
 
 **`STANDARD`** (default)
 
 | rows × cols | double | float | double alloc | float alloc |
 |---|---|---|---|---|
-| 1,000 × 10 | 0.06 ± 0.00 | 0.08 ± 0.00 | 0.08 | 0.04 |
-| 10,000 × 100 | 9.13 ± 0.32 | 10.33 ± 0.38 | 8.09 | 4.05 |
-| 100,000 × 100 | 200.00 ± 2.71 | 112.88 ± 6.69 | 80.09 | 40.05 |
-| 10,000 × 1,000 | 1,321.31 ± 167.00 | 1,013.18 ± 61.10 | 88.03 | 44.03 |
+| 1,000 × 10 | 0.06 ± 0.01 | 0.08 ± 0.01 | 0.08 | 0.04 |
+| 10,000 × 100 | 9.61 ± 2.39 | 10.33 ± 0.17 | 8.09 | 4.05 |
+| 100,000 × 100 | 204.79 ± 12.61 | 113.25 ± 2.15 | 80.09 | 40.05 |
+| 10,000 × 1,000 | 1,309.17 ± 74.03 | 1,042.79 ± 109.67 | 88.03 | 44.03 |
 
 **`HIGH_PERFORMANCE`**
 
 | rows × cols | double | float | double alloc | float alloc |
 |---|---|---|---|---|
 | 1,000 × 10 | 0.06 ± 0.00 | 0.07 ± 0.00 | 0.08 | 0.04 |
-| 10,000 × 100 | 6.47 ± 0.07 | 7.31 ± 0.12 | 8.09 | 4.05 |
-| 100,000 × 100 | 87.12 ± 1.22 | 76.22 ± 3.92 | 80.09 | 40.05 |
-| 10,000 × 1,000 | 509.11 ± 24.29 | 611.55 ± 25.96 | 88.04 | 44.04 |
+| 10,000 × 100 | 6.46 ± 0.08 | 7.30 ± 0.05 | 8.09 | 4.05 |
+| 100,000 × 100 | 87.36 ± 2.58 | 77.17 ± 5.16 | 80.09 | 40.05 |
+| 10,000 × 1,000 | 510.93 ± 35.12 | 617.95 ± 54.88 | 88.04 | 44.04 |
+
+**`VECTORIZED`**
+
+| rows × cols | double | float | double alloc | float alloc |
+|---|---|---|---|---|
+| 1,000 × 10 | 0.04 ± 0.00 | 0.06 ± 0.00 | 0.08 | 0.04 |
+| 10,000 × 100 | 3.12 ± 0.06 | 2.12 ± 0.01 | 8.09 | 4.05 |
+| 100,000 × 100 | 85.29 ± 3.06 | 37.86 ± 1.27 | 80.09 | 40.05 |
+| 10,000 × 1,000 | 332.39 ± 12.92 | 161.53 ± 13.44 | 88.04 | 44.04 |
 <!-- benchmark-snapshot:end -->
 
 ### Running them yourself
 
 ```bash
 ./mvnw -DskipTests clean package
-java -jar corrcalc-lib-bench/target/benchmarks.jar -p profile=STANDARD,HIGH_PERFORMANCE   # all profiles, ~25 min
+java -jar corrcalc-lib-bench/target/benchmarks.jar -p profile=STANDARD,HIGH_PERFORMANCE,VECTORIZED   # all profiles, ~40 min
 java -jar corrcalc-lib-bench/target/benchmarks.jar -p size=10000x100 -f 1 -wi 2 -i 3   # quick check (default profile)
 ```
 
