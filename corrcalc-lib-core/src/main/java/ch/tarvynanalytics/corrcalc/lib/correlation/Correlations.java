@@ -67,9 +67,14 @@ public final class Correlations {
 
     private static CorrelationCalculator newPearson(Profile profile) {
         return switch (profile) {
-            case STANDARD -> new PearsonCorrelationCalculator(new DoubleKernels(), new FloatKernels());
-            case HIGH_PERFORMANCE ->
-                    new PearsonCorrelationCalculator(new TiledDoubleKernels(), new TiledFloatKernels());
+            case STANDARD -> {
+                FloatKernels floatKernels = new FloatKernels();
+                yield new PearsonCorrelationCalculator(new DoubleKernels(), floatKernels, floatKernels);
+            }
+            case HIGH_PERFORMANCE -> {
+                TiledFloatKernels floatKernels = new TiledFloatKernels();
+                yield new PearsonCorrelationCalculator(new TiledDoubleKernels(), floatKernels, floatKernels);
+            }
             case VECTORIZED -> newVectorizedPearson();
         };
     }
@@ -87,9 +92,11 @@ public final class Correlations {
         try {
             Kernels<double[]> doubleKernels = (Kernels<double[]>)
                     Class.forName(pkg + ".VectorizedDoubleKernels").getDeclaredConstructor().newInstance();
-            Kernels<float[]> floatKernels = (Kernels<float[]>)
+            Kernels<float[]> fastFloatKernels = (Kernels<float[]>)
+                    Class.forName(pkg + ".VectorizedFastFloatKernels").getDeclaredConstructor().newInstance();
+            Kernels<float[]> preciseFloatKernels = (Kernels<float[]>)
                     Class.forName(pkg + ".VectorizedFloatKernels").getDeclaredConstructor().newInstance();
-            return new PearsonCorrelationCalculator(doubleKernels, floatKernels);
+            return new PearsonCorrelationCalculator(doubleKernels, fastFloatKernels, preciseFloatKernels);
         } catch (ReflectiveOperationException | NoClassDefFoundError | UnsupportedClassVersionError e) {
             throw new CorrCalcException(
                     "Profile.VECTORIZED requires a Java 25+ JVM started with"

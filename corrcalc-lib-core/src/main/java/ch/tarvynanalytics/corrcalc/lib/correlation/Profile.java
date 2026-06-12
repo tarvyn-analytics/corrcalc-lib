@@ -30,10 +30,13 @@ public enum Profile {
 
     /**
      * The tiled kernels with explicit SIMD and FMA via the incubator Vector
-     * API. Accumulation stays in double (float lanes are widened), memory
-     * budget unchanged, results differ only by summation order. <b>Requires a
-     * Java 25+ JVM started with {@code --add-modules jdk.incubator.vector}</b>;
-     * requesting this profile without that fails fast with a
+     * API; memory budget unchanged. Double results always accumulate in
+     * double; the float→float path accumulates full-width float lanes in
+     * bounded chunks folded into double — its error stays below the float
+     * result's own rounding step (see the precision contract on
+     * {@link CorrelationCalculator}). <b>Requires a Java 25+ JVM started with
+     * {@code --add-modules jdk.incubator.vector}</b>; requesting this profile
+     * without that fails fast with a
      * {@link ch.tarvynanalytics.corrcalc.lib.exception.CorrCalcException} —
      * there is no silent fallback.
      */

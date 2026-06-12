@@ -49,6 +49,4 @@ interface Kernels<A> {
             }
         }
     }
-
-    void set(A data, int index, double value);
 }

@@ -73,9 +73,14 @@ ch.tarvynanalytics.corrcalc.lib/
   **requires a Java 25+ JVM started with
   `--add-modules jdk.incubator.vector`** — requesting it without that fails
   fast, never falls back silently.
-- **Single-precision variant.** `FloatMatrix` halves memory and data transfer;
-  `Correlations.pearson().calculate(floatMatrix)` returns a `FloatMatrix` while
-  all sums still accumulate in double precision.
+- **Single-precision variant with a precision contract.** `FloatMatrix` halves
+  memory and data transfer. Sums always accumulate at least as precisely as
+  the result type: `calculate(floatMatrix)` returns a `FloatMatrix` and may
+  use chunked float accumulation where the profile supports it (the error
+  stays below the float result's own rounding step), while
+  `calculateToDouble(floatMatrix)` returns an unrounded `DoubleMatrix` from
+  pure double accumulation — the most accurate result float input can
+  support, without doubling the big `n x p` allocation.
 - **Missing values are explicit.** Calculators expect clean input; NaN handling
   is the job of the `prep` package (listwise deletion or mean imputation).
 - **Zero-variance columns** yield `NaN` coefficients (the value is undefined),
@@ -101,34 +106,34 @@ release procedure._
 ### Development snapshot
 
 <!-- benchmark-snapshot:start -->
-Development snapshot **v1.0.2-SNAPSHOT** (`6ecae55`), measured on 2026-06-12 with JDK 25.0.1 on Intel Core i7-6820HQ (8 threads, Windows host). JMH average time per correlation matrix in **ms/op** (± 99.9% confidence interval) and heap allocated per calculation in **MB/op** (`gc.alloc.rate.norm`); lower is better.
+Development snapshot **v1.0.2-SNAPSHOT** (`fcf1ee0`), measured on 2026-06-13 with JDK 25.0.1 on Intel Core i7-6820HQ (8 threads, Windows host). JMH average time per correlation matrix in **ms/op** (± 99.9% confidence interval) and heap allocated per calculation in **MB/op** (`gc.alloc.rate.norm`); lower is better.
 
 **`STANDARD`** (default)
 
 | rows × cols | double | float | double alloc | float alloc |
 |---|---|---|---|---|
-| 1,000 × 10 | 0.06 ± 0.01 | 0.08 ± 0.01 | 0.08 | 0.04 |
-| 10,000 × 100 | 9.61 ± 2.39 | 10.33 ± 0.17 | 8.09 | 4.05 |
-| 100,000 × 100 | 204.79 ± 12.61 | 113.25 ± 2.15 | 80.09 | 40.05 |
-| 10,000 × 1,000 | 1,309.17 ± 74.03 | 1,042.79 ± 109.67 | 88.03 | 44.03 |
+| 1,000 × 10 | 0.06 ± 0.00 | 0.08 ± 0.00 | 0.08 | 0.04 |
+| 10,000 × 100 | 9.07 ± 0.06 | 10.42 ± 0.49 | 8.09 | 4.05 |
+| 100,000 × 100 | 202.93 ± 4.49 | 113.82 ± 6.39 | 80.09 | 40.05 |
+| 10,000 × 1,000 | 1,291.42 ± 52.65 | 1,039.06 ± 206.65 | 88.03 | 44.03 |
 
 **`HIGH_PERFORMANCE`**
 
 | rows × cols | double | float | double alloc | float alloc |
 |---|---|---|---|---|
 | 1,000 × 10 | 0.06 ± 0.00 | 0.07 ± 0.00 | 0.08 | 0.04 |
-| 10,000 × 100 | 6.46 ± 0.08 | 7.30 ± 0.05 | 8.09 | 4.05 |
-| 100,000 × 100 | 87.36 ± 2.58 | 77.17 ± 5.16 | 80.09 | 40.05 |
-| 10,000 × 1,000 | 510.93 ± 35.12 | 617.95 ± 54.88 | 88.04 | 44.04 |
+| 10,000 × 100 | 6.45 ± 0.11 | 7.31 ± 0.07 | 8.09 | 4.05 |
+| 100,000 × 100 | 88.47 ± 3.51 | 75.95 ± 1.60 | 80.09 | 40.05 |
+| 10,000 × 1,000 | 507.04 ± 28.56 | 614.17 ± 56.63 | 88.04 | 44.04 |
 
 **`VECTORIZED`**
 
 | rows × cols | double | float | double alloc | float alloc |
 |---|---|---|---|---|
 | 1,000 × 10 | 0.04 ± 0.00 | 0.06 ± 0.00 | 0.08 | 0.04 |
-| 10,000 × 100 | 3.12 ± 0.06 | 2.12 ± 0.01 | 8.09 | 4.05 |
-| 100,000 × 100 | 85.29 ± 3.06 | 37.86 ± 1.27 | 80.09 | 40.05 |
-| 10,000 × 1,000 | 332.39 ± 12.92 | 161.53 ± 13.44 | 88.04 | 44.04 |
+| 10,000 × 100 | 3.09 ± 0.08 | 1.67 ± 0.05 | 8.09 | 4.05 |
+| 100,000 × 100 | 85.17 ± 2.12 | 37.37 ± 0.50 | 80.09 | 40.05 |
+| 10,000 × 1,000 | 331.89 ± 12.12 | 138.80 ± 10.31 | 88.04 | 44.04 |
 <!-- benchmark-snapshot:end -->
 
 ### Running them yourself
