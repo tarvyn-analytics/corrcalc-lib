@@ -19,7 +19,7 @@ for the common tasks.
 # overhead (~40-50% slower, float up to 2x on bandwidth-bound sizes).
 # Never mix WSL-run and host-run numbers in one comparison.
 ./mvnw -DskipTests clean package
-cmd.exe /c "java -jar corrcalc-lib-bench\target\benchmarks.jar -prof gc"   # full run, ~10 min
+cmd.exe /c "java -jar corrcalc-lib-bench\target\benchmarks.jar -p profile=STANDARD,HIGH_PERFORMANCE -prof gc"  # full official run, ~25 min
 cmd.exe /c "java -jar corrcalc-lib-bench\target\benchmarks.jar -p size=10000x100 -f 1 -wi 2 -i 3"  # quick check
 ```
 
@@ -94,7 +94,10 @@ executable spec.
    `@EnumSource(Profile.class)`, so the new constant inherits the full oracle
    suite. Add profile-specific tests only for its failure modes.
 4. Benchmark same-session A/B against `STANDARD` on the host (hot-loop guide
-   above) and document the numbers in the PR.
+   above) and document the numbers in the PR. Add the new constant to the
+   `-p profile=...` list in the official run commands (this file, the release
+   skill, README) — the README updater renders one table per profile found
+   in the results JSON.
 
 ### Add a data preparation step
 
@@ -129,7 +132,7 @@ absolute numbers are meaningless; only same-session deltas count. If the
 numbers moved, refresh the README development-snapshot table in the same PR:
 
 ```bash
-cmd.exe /c "java -jar corrcalc-lib-bench\target\benchmarks.jar -prof gc -rf json -rff corrcalc-lib-bench\results\$(date +%F)-<version>.json"
+cmd.exe /c "java -jar corrcalc-lib-bench\target\benchmarks.jar -p profile=STANDARD,HIGH_PERFORMANCE -prof gc -rf json -rff corrcalc-lib-bench\results\$(date +%F)-<version>.json"
 python3 corrcalc-lib-bench/update_benchmark_readme.py corrcalc-lib-bench/results/<that-file>.json README.md \
   --section snapshot --version <version> --commit <short-sha> \
   --runner "Intel Core i7-6820HQ (8 threads, Windows host)"

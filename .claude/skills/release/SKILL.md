@@ -64,7 +64,7 @@ develop history again.
    git checkout vX.Y.Z
    ./mvnw --batch-mode -DskipTests clean package
    # run on the Windows host via interop — never inside the WSL VM (half the cores)
-   cmd.exe /c "java -jar corrcalc-lib-bench\target\benchmarks.jar -prof gc -rf json -rff corrcalc-lib-bench\results\$(date +%F)-X.Y.Z.json"
+   cmd.exe /c "java -jar corrcalc-lib-bench\target\benchmarks.jar -p profile=STANDARD,HIGH_PERFORMANCE -prof gc -rf json -rff corrcalc-lib-bench\results\$(date +%F)-X.Y.Z.json"
    git checkout develop          # the results JSON is untracked and carries over
    python3 corrcalc-lib-bench/update_benchmark_readme.py corrcalc-lib-bench/results/<that-file>.json README.md \
      --section release --version X.Y.Z --commit "$(git rev-parse --short vX.Y.Z)" \

@@ -22,11 +22,19 @@ import sys
 CAPTIONS = {"release": "Release", "snapshot": "Development snapshot"}
 
 
+PROFILE_ORDER = ["STANDARD", "HIGH_PERFORMANCE", "VECTORIZED"]
+
+
 def find(entries, method, size):
     for entry in entries:
         if entry["benchmark"].endswith(method) and entry["params"]["size"] == size:
             return entry
     return None
+
+
+def profile_of(entry):
+    # results recorded before the profile @Param existed are STANDARD
+    return entry["params"].get("profile", "STANDARD")
 
 
 def time_cell(entry):
@@ -51,10 +59,6 @@ def alloc_cell(entry):
 
 
 def render(entries, section, version, commit, runner):
-    sizes = sorted(
-        {entry["params"]["size"] for entry in entries},
-        key=lambda s: int(s.split("x")[0]) * int(s.split("x")[1]) ** 2,
-    )
     units = {entry["primaryMetric"]["scoreUnit"] for entry in entries}
     if len(units) != 1:
         sys.exit(f"expected one score unit, got {sorted(units)}")
@@ -67,19 +71,28 @@ def render(entries, section, version, commit, runner):
         f"JMH average time per correlation matrix in **{unit}** "
         "(± 99.9% confidence interval) and heap allocated per calculation "
         "in **MB/op** (`gc.alloc.rate.norm`); lower is better.",
-        "",
-        "| rows × cols | double | float | double alloc | float alloc |",
-        "|---|---|---|---|---|",
     ]
-    for size in sizes:
-        rows, cols = size.split("x")
-        d = find(entries, ".pearsonDouble", size)
-        f = find(entries, ".pearsonFloat", size)
-        lines.append(
-            f"| {int(rows):,} × {int(cols):,} "
-            f"| {time_cell(d)} | {time_cell(f)} "
-            f"| {alloc_cell(d)} | {alloc_cell(f)} |"
+    profiles = sorted({profile_of(e) for e in entries},
+                      key=lambda x: (PROFILE_ORDER.index(x) if x in PROFILE_ORDER else 99, x))
+    for profile in profiles:
+        subset = [e for e in entries if profile_of(e) == profile]
+        suffix = " (default)" if profile == "STANDARD" else ""
+        lines += ["", f"**`{profile}`**{suffix}", "",
+                  "| rows × cols | double | float | double alloc | float alloc |",
+                  "|---|---|---|---|---|"]
+        sizes = sorted(
+            {entry["params"]["size"] for entry in subset},
+            key=lambda s: int(s.split("x")[0]) * int(s.split("x")[1]) ** 2,
         )
+        for size in sizes:
+            rows, cols = size.split("x")
+            d = find(subset, ".pearsonDouble", size)
+            f = find(subset, ".pearsonFloat", size)
+            lines.append(
+                f"| {int(rows):,} × {int(cols):,} "
+                f"| {time_cell(d)} | {time_cell(f)} "
+                f"| {alloc_cell(d)} | {alloc_cell(f)} |"
+            )
     return "\n".join(lines)
 
 

@@ -95,22 +95,33 @@ release procedure._
 ### Development snapshot
 
 <!-- benchmark-snapshot:start -->
-Development snapshot **v1.0.2-SNAPSHOT** (`73e6e78`), measured on 2026-06-12 with JDK 25.0.1 on Intel Core i7-6820HQ (8 threads, Windows host). JMH average time per correlation matrix in **ms/op** (± 99.9% confidence interval) and heap allocated per calculation in **MB/op** (`gc.alloc.rate.norm`); lower is better.
+Development snapshot **v1.0.2-SNAPSHOT** (`cb03ddc`), measured on 2026-06-12 with JDK 25.0.1 on Intel Core i7-6820HQ (8 threads, Windows host). JMH average time per correlation matrix in **ms/op** (± 99.9% confidence interval) and heap allocated per calculation in **MB/op** (`gc.alloc.rate.norm`); lower is better.
+
+**`STANDARD`** (default)
 
 | rows × cols | double | float | double alloc | float alloc |
 |---|---|---|---|---|
 | 1,000 × 10 | 0.06 ± 0.00 | 0.08 ± 0.00 | 0.08 | 0.04 |
-| 10,000 × 100 | 9.43 ± 0.23 | 10.39 ± 0.11 | 8.09 | 4.05 |
-| 100,000 × 100 | 229.95 ± 33.55 | 121.91 ± 3.95 | 80.09 | 40.05 |
-| 10,000 × 1,000 | 1,423.71 ± 32.27 | 1,105.85 ± 137.19 | 88.01 | 44.01 |
+| 10,000 × 100 | 9.13 ± 0.32 | 10.33 ± 0.38 | 8.09 | 4.05 |
+| 100,000 × 100 | 200.00 ± 2.71 | 112.88 ± 6.69 | 80.09 | 40.05 |
+| 10,000 × 1,000 | 1,321.31 ± 167.00 | 1,013.18 ± 61.10 | 88.03 | 44.03 |
+
+**`HIGH_PERFORMANCE`**
+
+| rows × cols | double | float | double alloc | float alloc |
+|---|---|---|---|---|
+| 1,000 × 10 | 0.06 ± 0.00 | 0.07 ± 0.00 | 0.08 | 0.04 |
+| 10,000 × 100 | 6.47 ± 0.07 | 7.31 ± 0.12 | 8.09 | 4.05 |
+| 100,000 × 100 | 87.12 ± 1.22 | 76.22 ± 3.92 | 80.09 | 40.05 |
+| 10,000 × 1,000 | 509.11 ± 24.29 | 611.55 ± 25.96 | 88.04 | 44.04 |
 <!-- benchmark-snapshot:end -->
 
 ### Running them yourself
 
 ```bash
 ./mvnw -DskipTests clean package
-java -jar corrcalc-lib-bench/target/benchmarks.jar   # full run, ~10 min
-java -jar corrcalc-lib-bench/target/benchmarks.jar -p size=10000x100 -f 1 -wi 2 -i 3   # quick check
+java -jar corrcalc-lib-bench/target/benchmarks.jar -p profile=STANDARD,HIGH_PERFORMANCE   # all profiles, ~25 min
+java -jar corrcalc-lib-bench/target/benchmarks.jar -p size=10000x100 -f 1 -wi 2 -i 3   # quick check (default profile)
 ```
 
 If you develop inside WSL, build there but run the jar on the Windows host
