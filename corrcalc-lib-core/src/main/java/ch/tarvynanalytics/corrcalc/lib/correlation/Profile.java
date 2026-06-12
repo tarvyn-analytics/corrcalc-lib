@@ -26,5 +26,16 @@ public enum Profile {
      * requirements apply; results differ from {@link #STANDARD} only by
      * floating-point summation order (last-ulp).
      */
-    HIGH_PERFORMANCE
+    HIGH_PERFORMANCE,
+
+    /**
+     * The tiled kernels with explicit SIMD and FMA via the incubator Vector
+     * API. Accumulation stays in double (float lanes are widened), memory
+     * budget unchanged, results differ only by summation order. <b>Requires a
+     * Java 25+ JVM started with {@code --add-modules jdk.incubator.vector}</b>;
+     * requesting this profile without that fails fast with a
+     * {@link ch.tarvynanalytics.corrcalc.lib.exception.CorrCalcException} —
+     * there is no silent fallback.
+     */
+    VECTORIZED
 }

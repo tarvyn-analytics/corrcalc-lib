@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Benchmark)
-@Fork(value = 1, jvmArgsAppend = "-Xmx2g")
+@Fork(value = 1, jvmArgsAppend = {"-Xmx2g", "--add-modules", "jdk.incubator.vector"})
 @Warmup(iterations = 3, time = 2)
 @Measurement(iterations = 5, time = 2)
 public class PearsonCorrelationBenchmark {
