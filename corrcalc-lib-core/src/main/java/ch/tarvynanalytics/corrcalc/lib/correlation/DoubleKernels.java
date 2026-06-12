@@ -41,8 +41,22 @@ final class DoubleKernels implements Kernels<double[]> {
 
     @Override
     public double dot(double[] data, int offsetI, int offsetJ, int n) {
-        double r = 0;
-        for (int row = 0; row < n; row++) {
+        // four independent accumulators: a single sum chains every iteration
+        // on the FP-add latency, capping the loop at ~0.5 FLOP/cycle
+        double s0 = 0;
+        double s1 = 0;
+        double s2 = 0;
+        double s3 = 0;
+        int limit = n & ~3;
+        int row = 0;
+        for (; row < limit; row += 4) {
+            s0 += data[offsetI + row] * data[offsetJ + row];
+            s1 += data[offsetI + row + 1] * data[offsetJ + row + 1];
+            s2 += data[offsetI + row + 2] * data[offsetJ + row + 2];
+            s3 += data[offsetI + row + 3] * data[offsetJ + row + 3];
+        }
+        double r = (s0 + s1) + (s2 + s3);
+        for (; row < n; row++) {
             r += data[offsetI + row] * data[offsetJ + row];
         }
         return r;
