@@ -33,6 +33,51 @@
 
     <build>
         <plugins>
+            <!-- The Vectorized* kernels link against the incubator Vector API
+                 and need class-file version 69; everything else stays on the
+                 Java 21 baseline. Building therefore requires JDK 25, but the
+                 jar still runs on 21 — the v69 classes are only linked when
+                 Profile.VECTORIZED is requested (loaded reflectively). -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/Vectorized*.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>compile-vectorized</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <release>25</release>
+                            <includes>
+                                <include>**/Vectorized*.java</include>
+                            </includes>
+                            <compilerArgs>
+                                <arg>--add-modules</arg>
+                                <arg>jdk.incubator.vector</arg>
+                            </compilerArgs>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- the test JVM needs the module so the @EnumSource-parametrized
+                 suites can exercise Profile.VECTORIZED -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>@{argLine} --add-modules jdk.incubator.vector</argLine>
+                </configuration>
+            </plugin>
             <!-- JaCoCo Code Coverage Plugin -->
             <plugin>
                 <groupId>org.jacoco</groupId>
@@ -106,6 +151,13 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <version>3.11.2</version>
+                        <configuration>
+                            <!-- the Vectorized* sources import the incubator module -->
+                            <additionalOptions>
+                                <additionalOption>--add-modules</additionalOption>
+                                <additionalOption>jdk.incubator.vector</additionalOption>
+                            </additionalOptions>
+                        </configuration>
                         <executions>
                             <execution>
                                 <id>attach-javadocs</id>

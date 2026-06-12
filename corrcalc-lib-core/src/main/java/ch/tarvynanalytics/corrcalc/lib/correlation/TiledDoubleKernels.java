@@ -8,7 +8,7 @@ package ch.tarvynanalytics.corrcalc.lib.correlation;
  * bandwidth-bound large inputs are limited by. Accumulation stays in double;
  * only the summation order differs from {@link DoubleKernels}.
  */
-final class TiledDoubleKernels extends DoubleKernels {
+class TiledDoubleKernels extends DoubleKernels {
 
     @Override
     public int tileSize() {

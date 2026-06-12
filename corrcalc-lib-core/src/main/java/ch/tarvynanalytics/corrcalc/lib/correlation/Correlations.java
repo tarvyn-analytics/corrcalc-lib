@@ -1,5 +1,6 @@
 package ch.tarvynanalytics.corrcalc.lib.correlation;
 
+import ch.tarvynanalytics.corrcalc.lib.exception.CorrCalcException;
 import ch.tarvynanalytics.corrcalc.lib.exception.InvalidInputException;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -69,6 +70,30 @@ public final class Correlations {
             case STANDARD -> new PearsonCorrelationCalculator(new DoubleKernels(), new FloatKernels());
             case HIGH_PERFORMANCE ->
                     new PearsonCorrelationCalculator(new TiledDoubleKernels(), new TiledFloatKernels());
+            case VECTORIZED -> newVectorizedPearson();
         };
+    }
+
+    /**
+     * The vectorized kernels are class-file version 69 and link against the
+     * incubator Vector API, so they are loaded reflectively: a JVM that never
+     * requests {@link Profile#VECTORIZED} never links them, and one that does
+     * without meeting the requirements gets a clear failure instead of a
+     * {@code NoClassDefFoundError} from an arbitrary call site.
+     */
+    @SuppressWarnings("unchecked")
+    private static CorrelationCalculator newVectorizedPearson() {
+        String pkg = Correlations.class.getPackageName();
+        try {
+            Kernels<double[]> doubleKernels = (Kernels<double[]>)
+                    Class.forName(pkg + ".VectorizedDoubleKernels").getDeclaredConstructor().newInstance();
+            Kernels<float[]> floatKernels = (Kernels<float[]>)
+                    Class.forName(pkg + ".VectorizedFloatKernels").getDeclaredConstructor().newInstance();
+            return new PearsonCorrelationCalculator(doubleKernels, floatKernels);
+        } catch (ReflectiveOperationException | NoClassDefFoundError | UnsupportedClassVersionError e) {
+            throw new CorrCalcException(
+                    "Profile.VECTORIZED requires a Java 25+ JVM started with"
+                            + " --add-modules jdk.incubator.vector", e);
+        }
     }
 }

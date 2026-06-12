@@ -19,7 +19,7 @@ for the common tasks.
 # overhead (~40-50% slower, float up to 2x on bandwidth-bound sizes).
 # Never mix WSL-run and host-run numbers in one comparison.
 ./mvnw -DskipTests clean package
-cmd.exe /c "java -jar corrcalc-lib-bench\target\benchmarks.jar -p profile=STANDARD,HIGH_PERFORMANCE -prof gc"  # full official run, ~25 min
+cmd.exe /c "java -jar corrcalc-lib-bench\target\benchmarks.jar -p profile=STANDARD,HIGH_PERFORMANCE,VECTORIZED -prof gc"  # full official run, ~40 min
 cmd.exe /c "java -jar corrcalc-lib-bench\target\benchmarks.jar -p size=10000x100 -f 1 -wi 2 -i 3"  # quick check
 ```
 
@@ -27,6 +27,10 @@ Multi-module reactor: the root pom (`corrcalc-lib-parent`) aggregates
 `corrcalc-lib-core/` (the published library) and `corrcalc-lib-bench/` (JMH,
 never deployed); module directories equal their artifactIds. Version lives in
 the parent; `versions:set` at the root moves all modules together.
+**Building requires JDK 25** (the `Vectorized*` kernels compile with
+`--release 25` + the incubator Vector API in a second compiler execution);
+everything else stays `--release 21` and the jar runs on Java 21 — the v69
+classes are loaded reflectively only when `Profile.VECTORIZED` is requested.
 
 Coverage report: `corrcalc-lib-core/target/site/jacoco/index.html` (CSV next to it for scripting).
 This is a library — there is no application to run; the tests are the
@@ -132,7 +136,7 @@ absolute numbers are meaningless; only same-session deltas count. If the
 numbers moved, refresh the README development-snapshot table in the same PR:
 
 ```bash
-cmd.exe /c "java -jar corrcalc-lib-bench\target\benchmarks.jar -p profile=STANDARD,HIGH_PERFORMANCE -prof gc -rf json -rff corrcalc-lib-bench\results\$(date +%F)-<version>.json"
+cmd.exe /c "java -jar corrcalc-lib-bench\target\benchmarks.jar -p profile=STANDARD,HIGH_PERFORMANCE,VECTORIZED -prof gc -rf json -rff corrcalc-lib-bench\results\$(date +%F)-<version>.json"
 python3 corrcalc-lib-bench/update_benchmark_readme.py corrcalc-lib-bench/results/<that-file>.json README.md \
   --section snapshot --version <version> --commit <short-sha> \
   --runner "Intel Core i7-6820HQ (8 threads, Windows host)"

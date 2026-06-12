@@ -7,7 +7,7 @@ package ch.tarvynanalytics.corrcalc.lib.correlation;
  * row and reused four times, which sidesteps the per-pair widening cost that
  * made the plain unrolled float dot slower (see {@link FloatKernels#dot}).
  */
-final class TiledFloatKernels extends FloatKernels {
+class TiledFloatKernels extends FloatKernels {
 
     @Override
     public int tileSize() {
