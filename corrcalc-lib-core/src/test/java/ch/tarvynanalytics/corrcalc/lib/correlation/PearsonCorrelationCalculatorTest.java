@@ -310,8 +310,108 @@ class PearsonCorrelationCalculatorTest {
         assertEquals(snapshot, input);
     }
 
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculateToDouble_RandomMatrix_MatchesReferenceOnQuantizedInput(Profile profile) {
+        // calculateToDouble accumulates in double on every profile; what remains
+        // is the float quantization of the normalized working buffer, which
+        // bounds the result around 1e-8 (shrinking with larger n as errors
+        // average out) — better than the ~1e-7 float result rounding, but
+        // not double-roundoff
+        FloatMatrix input = floatCopyOf(randomMatrix(257, 9, 4242L));
+        DoubleMatrix quantized = doubleCopyOf(input);
+
+        DoubleMatrix actual = calculator(profile).calculateToDouble(input);
+
+        double[][] expected = referencePearson(quantized);
+        for (int i = 0; i < expected.length; i++) {
+            for (int j = 0; j < expected.length; j++) {
+                assertEquals(expected[i][j], actual.get(i, j), 5e-8,
+                        "mismatch at [" + i + "," + j + "]");
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculateToDouble_RandomMatrix_FloatResultMatchesWithinFloatRounding(Profile profile) {
+        // the float→float path may accumulate in float chunks; its deviation from
+        // the double-accumulated result must stay below the float rounding step
+        FloatMatrix input = floatCopyOf(randomMatrix(10_000, 8, 7L));
+
+        DoubleMatrix precise = calculator(profile).calculateToDouble(input);
+        FloatMatrix fast = calculator(profile).calculate(input);
+
+        for (int i = 0; i < precise.rows(); i++) {
+            for (int j = 0; j < precise.cols(); j++) {
+                assertEquals(precise.get(i, j), fast.get(i, j), 1.2e-7,
+                        "mismatch at [" + i + "," + j + "]");
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculate_FloatStronglyCorrelatedLongColumns_StaysWithinFloatPrecision(Profile profile) {
+        // adversarial case for chunked float accumulation: coefficients near +-1
+        // (where the absolute float rounding step is largest) over many rows
+        int n = 50_000;
+        Random random = new Random(31L);
+        FloatMatrix input = FloatMatrix.zeros(n, 4);
+        for (int i = 0; i < n; i++) {
+            double x = random.nextGaussian();
+            input.set(i, 0, (float) x);
+            input.set(i, 1, (float) (3.0 * x + 1e-3 * random.nextGaussian()));
+            input.set(i, 2, (float) (-x + 1e-3 * random.nextGaussian()));
+            input.set(i, 3, (float) (x + 100.0 + 1e-3 * random.nextGaussian()));
+        }
+
+        DoubleMatrix reference = new PearsonCorrelationCalculator(
+                new DoubleKernels(), new FloatKernels(), new FloatKernels())
+                .calculate(doubleCopyOf(input));
+        FloatMatrix actual = calculator(profile).calculate(input);
+
+        for (int i = 0; i < reference.rows(); i++) {
+            for (int j = 0; j < reference.cols(); j++) {
+                assertEquals(reference.get(i, j), actual.get(i, j), 5e-7,
+                        "mismatch at [" + i + "," + j + "]");
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculateToDouble_EmptyInput_ThrowsInvalidInput(Profile profile) {
+        FloatMatrix noRows = FloatMatrix.columnMajor(new float[0], 0, 0);
+        assertThrows(InvalidInputException.class, () -> calculator(profile).calculateToDouble(noRows));
+
+        FloatMatrix noCols = FloatMatrix.columnMajor(new float[0], 3, 0);
+        assertThrows(InvalidInputException.class, () -> calculator(profile).calculateToDouble(noCols));
+    }
+
+    @ParameterizedTest
+    @EnumSource(Profile.class)
+    void calculateToDouble_InputMatrix_IsNotModified(Profile profile) {
+        FloatMatrix input = floatCopyOf(randomMatrix(20, 4, 99L));
+        FloatMatrix snapshot = input.copy();
+
+        calculator(profile).calculateToDouble(input);
+
+        assertEquals(snapshot, input);
+    }
+
     private static PearsonCorrelationCalculator calculator(Profile profile) {
         return (PearsonCorrelationCalculator) Correlations.pearson(profile);
+    }
+
+    private static DoubleMatrix doubleCopyOf(FloatMatrix input) {
+        DoubleMatrix result = DoubleMatrix.zeros(input.rows(), input.cols());
+        for (int j = 0; j < input.cols(); j++) {
+            for (int i = 0; i < input.rows(); i++) {
+                result.set(i, j, input.get(i, j));
+            }
+        }
+        return result;
     }
 
     private static DoubleMatrix randomMatrix(int rows, int cols, long seed) {

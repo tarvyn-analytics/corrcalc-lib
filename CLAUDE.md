@@ -46,8 +46,14 @@ executable spec.
    `data()` returns the live backing array. Never add defensive copies to
    these paths; never mutate an array you received through `data()` of a
    matrix you don't own.
-4. **Accumulate in double, always** — including all `float[]` code paths.
-   Only loads and stores are single precision.
+4. **Accumulate at least as precisely as the result type.** Double results —
+   including `calculateToDouble(FloatMatrix)` — always come from pure double
+   accumulation, no exceptions. The float→float path may accumulate in float
+   over bounded chunks (`VECTORIZED` folds 1024-row float blocks into double)
+   because the error stays below the float result's own rounding step; any
+   kernel doing this needs adversarial accuracy tests (coefficients near ±1,
+   large n) proving that bound (COR-324 measured max 8e-9 vs the ~6e-8 float
+   ulp at |r|=1).
 5. **Calculators and preparers are stateless**; factories (`Correlations`,
    `Preparers`) hand out shared singletons. Preparers return a new matrix and
    never mutate their input.

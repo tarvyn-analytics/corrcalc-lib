@@ -62,8 +62,4 @@ class DoubleKernels implements Kernels<double[]> {
         return r;
     }
 
-    @Override
-    public void set(double[] data, int index, double value) {
-        data[index] = value;
-    }
 }

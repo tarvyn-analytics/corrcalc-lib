@@ -73,9 +73,14 @@ ch.tarvynanalytics.corrcalc.lib/
   **requires a Java 25+ JVM started with
   `--add-modules jdk.incubator.vector`** — requesting it without that fails
   fast, never falls back silently.
-- **Single-precision variant.** `FloatMatrix` halves memory and data transfer;
-  `Correlations.pearson().calculate(floatMatrix)` returns a `FloatMatrix` while
-  all sums still accumulate in double precision.
+- **Single-precision variant with a precision contract.** `FloatMatrix` halves
+  memory and data transfer. Sums always accumulate at least as precisely as
+  the result type: `calculate(floatMatrix)` returns a `FloatMatrix` and may
+  use chunked float accumulation where the profile supports it (the error
+  stays below the float result's own rounding step), while
+  `calculateToDouble(floatMatrix)` returns an unrounded `DoubleMatrix` from
+  pure double accumulation — the most accurate result float input can
+  support, without doubling the big `n x p` allocation.
 - **Missing values are explicit.** Calculators expect clean input; NaN handling
   is the job of the `prep` package (listwise deletion or mean imputation).
 - **Zero-variance columns** yield `NaN` coefficients (the value is undefined),

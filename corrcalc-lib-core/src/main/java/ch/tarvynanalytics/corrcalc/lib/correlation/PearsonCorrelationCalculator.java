@@ -45,28 +45,57 @@ final class PearsonCorrelationCalculator implements CorrelationCalculator {
 
     private final Kernels<double[]> doubleKernels;
     private final Kernels<float[]> floatKernels;
+    private final Kernels<float[]> preciseFloatKernels;
 
     /**
      * The {@link Profile} chooses the kernels; the orchestration here is the
-     * same for every profile.
+     * same for every profile. {@code floatKernels} serves the float→float
+     * API and may accumulate single precision in bounded chunks;
+     * {@code preciseFloatKernels} serves {@link #calculateToDouble} and must
+     * accumulate in double (most profiles pass the same instance for both).
      */
-    PearsonCorrelationCalculator(Kernels<double[]> doubleKernels, Kernels<float[]> floatKernels) {
+    PearsonCorrelationCalculator(Kernels<double[]> doubleKernels, Kernels<float[]> floatKernels,
+                                 Kernels<float[]> preciseFloatKernels) {
         this.doubleKernels = doubleKernels;
         this.floatKernels = floatKernels;
+        this.preciseFloatKernels = preciseFloatKernels;
     }
 
     @Override
     public DoubleMatrix calculate(DoubleMatrix observations) {
+        int n = observations.rows();
         int p = observations.cols();
-        double[] corr = correlate(observations.data(), observations.rows(), p, doubleKernels);
+        double[] corr = new double[resultLength(p)];
+        correlate(observations.data(), n, p, doubleKernels, (index, value) -> corr[index] = value);
         return DoubleMatrix.columnMajor(corr, p, p);
     }
 
     @Override
     public FloatMatrix calculate(FloatMatrix observations) {
+        int n = observations.rows();
         int p = observations.cols();
-        float[] corr = correlate(observations.data(), observations.rows(), p, floatKernels);
+        float[] corr = new float[resultLength(p)];
+        correlate(observations.data(), n, p, floatKernels, (index, value) -> corr[index] = (float) value);
         return FloatMatrix.columnMajor(corr, p, p);
+    }
+
+    @Override
+    public DoubleMatrix calculateToDouble(FloatMatrix observations) {
+        int n = observations.rows();
+        int p = observations.cols();
+        double[] corr = new double[resultLength(p)];
+        correlate(observations.data(), n, p, preciseFloatKernels, (index, value) -> corr[index] = value);
+        return DoubleMatrix.columnMajor(corr, p, p);
+    }
+
+    private static int resultLength(int p) {
+        return p < 1 ? 0 : Math.multiplyExact(p, p);
+    }
+
+    /** Stores one coefficient into the result array of the API-specific type. */
+    @FunctionalInterface
+    private interface ResultSetter {
+        void set(int index, double value);
     }
 
     /**
@@ -74,7 +103,7 @@ final class PearsonCorrelationCalculator implements CorrelationCalculator {
      * correlation matrix with pairwise column dot products. {@code A} is the flat
      * column-major storage array, {@code double[]} or {@code float[]}.
      */
-    private static <A> A correlate(A src, int n, int p, Kernels<A> kernels) {
+    private static <A> void correlate(A src, int n, int p, Kernels<A> kernels, ResultSetter corr) {
         if (n < 1 || p < 1) {
             throw new InvalidInputException(
                     "At least one observation row and one variable column are required, got [" + n + "x" + p + "]");
@@ -84,7 +113,6 @@ final class PearsonCorrelationCalculator implements CorrelationCalculator {
         A normalized = kernels.allocate(n * p);
         columns(p, parallel).forEach(col -> kernels.normalizeColumn(src, normalized, n, col));
 
-        A corr = kernels.allocate(Math.multiplyExact(p, p));
         int tile = kernels.tileSize();
         int tileCount = (p + tile - 1) / tile;
         columns(tileCount, parallel).forEach(tileJ -> {
@@ -95,7 +123,7 @@ final class PearsonCorrelationCalculator implements CorrelationCalculator {
             int countJ = Math.min(tile, p - colJ0);
             for (int jj = 0; jj < countJ; jj++) {
                 int j = colJ0 + jj;
-                kernels.set(corr, j * p + j, 1.0);
+                corr.set(j * p + j, 1.0);
             }
             double[] dots = new double[tile * tile];
             for (int tileI = 0; tileI <= tileJ; tileI++) {
@@ -111,13 +139,12 @@ final class PearsonCorrelationCalculator implements CorrelationCalculator {
                     for (int ii = 0; ii < upToII; ii++) {
                         int i = colI0 + ii;
                         double r = dots[ii * countJ + jj];
-                        kernels.set(corr, j * p + i, r);
-                        kernels.set(corr, i * p + j, r);
+                        corr.set(j * p + i, r);
+                        corr.set(i * p + j, r);
                     }
                 }
             }
         });
-        return corr;
     }
 
     private static IntStream columns(int p, boolean parallel) {

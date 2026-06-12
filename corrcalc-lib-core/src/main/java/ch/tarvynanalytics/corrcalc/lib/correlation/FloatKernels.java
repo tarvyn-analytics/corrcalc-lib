@@ -53,8 +53,4 @@ class FloatKernels implements Kernels<float[]> {
         return r;
     }
 
-    @Override
-    public void set(float[] data, int index, double value) {
-        data[index] = (float) value;
-    }
 }
