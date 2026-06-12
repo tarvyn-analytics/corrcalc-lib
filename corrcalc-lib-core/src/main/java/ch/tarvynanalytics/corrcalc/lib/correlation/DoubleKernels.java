@@ -3,7 +3,7 @@ package ch.tarvynanalytics.corrcalc.lib.correlation;
 /**
  * The {@link Kernels} implementation for double-precision storage.
  */
-final class DoubleKernels implements Kernels<double[]> {
+class DoubleKernels implements Kernels<double[]> {
 
     @Override
     public double[] allocate(int length) {

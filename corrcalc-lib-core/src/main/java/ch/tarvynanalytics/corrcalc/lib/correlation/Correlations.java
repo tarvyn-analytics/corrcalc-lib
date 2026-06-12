@@ -67,6 +67,8 @@ public final class Correlations {
     private static CorrelationCalculator newPearson(Profile profile) {
         return switch (profile) {
             case STANDARD -> new PearsonCorrelationCalculator(new DoubleKernels(), new FloatKernels());
+            case HIGH_PERFORMANCE ->
+                    new PearsonCorrelationCalculator(new TiledDoubleKernels(), new TiledFloatKernels());
         };
     }
 }

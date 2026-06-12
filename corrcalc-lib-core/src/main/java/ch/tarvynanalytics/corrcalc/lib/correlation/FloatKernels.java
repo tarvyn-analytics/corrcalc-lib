@@ -4,7 +4,7 @@ package ch.tarvynanalytics.corrcalc.lib.correlation;
  * The {@link Kernels} implementation for single-precision storage. Sums still
  * accumulate in double; only the stored elements are floats.
  */
-final class FloatKernels implements Kernels<float[]> {
+class FloatKernels implements Kernels<float[]> {
 
     @Override
     public float[] allocate(int length) {

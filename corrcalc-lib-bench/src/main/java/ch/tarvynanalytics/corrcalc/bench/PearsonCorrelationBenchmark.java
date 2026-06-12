@@ -1,6 +1,8 @@
 package ch.tarvynanalytics.corrcalc.bench;
 
+import ch.tarvynanalytics.corrcalc.lib.correlation.CorrelationCalculator;
 import ch.tarvynanalytics.corrcalc.lib.correlation.Correlations;
+import ch.tarvynanalytics.corrcalc.lib.correlation.Profile;
 import ch.tarvynanalytics.corrcalc.lib.matrix.DoubleMatrix;
 import ch.tarvynanalytics.corrcalc.lib.matrix.FloatMatrix;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -41,6 +43,14 @@ public class PearsonCorrelationBenchmark {
     @Param({"1000x10", "10000x100", "100000x100", "10000x1000"})
     private String size;
 
+    /**
+     * Official runs measure the default profile; pass
+     * {@code -p profile=STANDARD,HIGH_PERFORMANCE} for cross-profile A/Bs.
+     */
+    @Param({"STANDARD"})
+    private String profile;
+
+    private CorrelationCalculator calculator;
     private DoubleMatrix doubleMatrix;
     private FloatMatrix floatMatrix;
 
@@ -58,15 +68,16 @@ public class PearsonCorrelationBenchmark {
         }
         doubleMatrix = DoubleMatrix.columnMajor(doubleData, rows, cols);
         floatMatrix = FloatMatrix.columnMajor(floatData, rows, cols);
+        calculator = Correlations.pearson(Profile.valueOf(profile));
     }
 
     @Benchmark
     public DoubleMatrix pearsonDouble() {
-        return Correlations.pearson().calculate(doubleMatrix);
+        return calculator.calculate(doubleMatrix);
     }
 
     @Benchmark
     public FloatMatrix pearsonFloat() {
-        return Correlations.pearson().calculate(floatMatrix);
+        return calculator.calculate(floatMatrix);
     }
 }
