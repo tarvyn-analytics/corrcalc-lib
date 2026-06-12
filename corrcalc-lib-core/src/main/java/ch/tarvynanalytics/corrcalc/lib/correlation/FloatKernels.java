@@ -42,6 +42,10 @@ final class FloatKernels implements Kernels<float[]> {
 
     @Override
     public double dot(float[] data, int offsetI, int offsetJ, int n) {
+        // deliberately a single accumulator: the 4-accumulator unroll that
+        // speeds up DoubleKernels.dot measured 15-19% SLOWER here on the
+        // reference machine (COR-319) — the float->double widening reacts
+        // badly to the unrolled shape. Re-measure before changing this loop.
         double r = 0;
         for (int row = 0; row < n; row++) {
             r += (double) data[offsetI + row] * data[offsetJ + row];
