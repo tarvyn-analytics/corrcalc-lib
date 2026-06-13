@@ -115,36 +115,48 @@ final class PearsonCorrelationCalculator implements CorrelationCalculator {
 
         int tile = kernels.tileSize();
         int tileCount = (p + tile - 1) / tile;
-        columns(tileCount, parallel).forEach(tileJ -> {
-            // each tileJ writes a disjoint set of cells: the pairs whose larger
-            // column index falls in this tile, mirrored across the diagonal —
-            // safe to run concurrently
-            int colJ0 = tileJ * tile;
-            int countJ = Math.min(tile, p - colJ0);
-            for (int jj = 0; jj < countJ; jj++) {
-                int j = colJ0 + jj;
-                corr.set(j * p + j, 1.0);
+        // each tileJ writes a disjoint set of cells: the pairs whose larger column
+        // index falls in this tile, mirrored across the diagonal — safe concurrently
+        columns(tileCount, parallel).forEach(tileJ -> correlateTile(normalized, n, p, tile, tileJ, kernels, corr));
+    }
+
+    /** Fills the result cells whose larger column index lies in column-tile {@code tileJ}. */
+    private static <A> void correlateTile(A normalized, int n, int p, int tile, int tileJ,
+                                          Kernels<A> kernels, ResultSetter corr) {
+        int colJ0 = tileJ * tile;
+        int countJ = Math.min(tile, p - colJ0);
+        for (int jj = 0; jj < countJ; jj++) {
+            corr.set((colJ0 + jj) * p + (colJ0 + jj), 1.0);
+        }
+        double[] dots = new double[tile * tile];
+        for (int tileI = 0; tileI <= tileJ; tileI++) {
+            if (tileI == tileJ && countJ == 1) {
+                continue; // a 1x1 diagonal tile would only compute the self-dot
             }
-            double[] dots = new double[tile * tile];
-            for (int tileI = 0; tileI <= tileJ; tileI++) {
-                if (tileI == tileJ && countJ == 1) {
-                    continue; // a 1x1 diagonal tile would only compute the self-dot
-                }
-                int colI0 = tileI * tile;
-                int countI = Math.min(tile, p - colI0);
-                kernels.dotTile(normalized, n, colI0, countI, colJ0, countJ, dots);
-                for (int jj = 0; jj < countJ; jj++) {
-                    int j = colJ0 + jj;
-                    int upToII = tileI == tileJ ? jj : countI;
-                    for (int ii = 0; ii < upToII; ii++) {
-                        int i = colI0 + ii;
-                        double r = dots[ii * countJ + jj];
-                        corr.set(j * p + i, r);
-                        corr.set(i * p + j, r);
-                    }
-                }
+            int colI0 = tileI * tile;
+            int countI = Math.min(tile, p - colI0);
+            kernels.dotTile(normalized, n, colI0, countI, colJ0, countJ, dots);
+            writeTileBlock(corr, dots, p, colI0, countI, colJ0, countJ);
+        }
+    }
+
+    /**
+     * Writes one tile's {@code countI x countJ} dot products into the symmetric
+     * result, skipping the self-pairs on a diagonal tile.
+     */
+    private static void writeTileBlock(ResultSetter corr, double[] dots, int p, int colI0, int countI,
+                                       int colJ0, int countJ) {
+        boolean diagonalTile = colI0 == colJ0; // tileI == tileJ
+        for (int jj = 0; jj < countJ; jj++) {
+            int j = colJ0 + jj;
+            int upToII = diagonalTile ? jj : countI;
+            for (int ii = 0; ii < upToII; ii++) {
+                int i = colI0 + ii;
+                double r = dots[ii * countJ + jj];
+                corr.set(j * p + i, r);
+                corr.set(i * p + j, r);
             }
-        });
+        }
     }
 
     private static IntStream columns(int p, boolean parallel) {
