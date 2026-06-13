@@ -8,6 +8,7 @@
       "Bash(powershell.exe *)",
       "Bash(git *)",
       "Bash(gh *)",
+      "Bash(curl *)",
       "Bash(python3 *)",
       "Bash(.claude/tools/jira/jira.sh *)",
       "Bash(sed *)",
