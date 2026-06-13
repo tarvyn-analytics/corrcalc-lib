@@ -40,6 +40,9 @@ double r01 = corr.get(0, 1);
 
 //    ...or the partial correlation matrix (effect of all other variables removed)
 DoubleMatrix partial = Correlations.partial().calculate(prepared);
+
+//    ...or the Spearman rank correlation matrix (monotonic association)
+DoubleMatrix spearman = Correlations.spearman().calculate(prepared);
 ```
 
 ## Package structure
@@ -47,7 +50,7 @@ DoubleMatrix partial = Correlations.partial().calculate(prepared);
 ```
 ch.tarvynanalytics.corrcalc.lib/
 ├── matrix/       # DoubleMatrix & FloatMatrix — flat column-major storage
-├── correlation/  # CorrelationCalculator, CorrelationType (Pearson, partial), Correlations factory
+├── correlation/  # CorrelationCalculator, CorrelationType (Pearson, partial, Spearman), Correlations factory
 ├── prep/         # DataPreparer steps: dropMissingRows, imputeMean, center, standardize
 ├── io/           # MatrixReader, CsvMatrixReader (whitespace-separated values)
 └── exception/    # CorrCalcException, InvalidInputException
@@ -75,6 +78,12 @@ ch.tarvynanalytics.corrcalc.lib/
   (as in Pearson); a singular `R` — collinear columns or fewer observations
   than variables — has no precision matrix and is rejected with
   `InvalidInputException`.
+- **Spearman by ranking, then Pearson.** `Correlations.spearman()` replaces each
+  column with its average ranks (ties share their mean rank) and runs Pearson on
+  the ranks, so it measures monotonic rather than linear association and reuses
+  every profile and the precision contract unchanged. Ranking is an
+  `O(n·log n)` per-column merge sort over an `int` index array (no boxing); a
+  constant column has zero rank variance and so yields `NaN`, like Pearson.
 - **Selectable calculation profiles.** `Correlations.pearson(Profile...)` picks
   the implementation strategy. Every profile computes the same statistic and
   passes the same test suite; they differ in inner-loop execution and JVM
@@ -144,34 +153,94 @@ Release **v1.1.0** (`2907d76`), measured on 2026-06-13 with JDK 25.0.1 on Intel 
 ### Development snapshot
 
 <!-- benchmark-snapshot:start -->
-Development snapshot **v1.0.2-SNAPSHOT** (`fcf1ee0`), measured on 2026-06-13 with JDK 25.0.1 on Intel Core i7-6820HQ (8 threads, Windows host). JMH average time per correlation matrix in **ms/op** (± 99.9% confidence interval) and heap allocated per calculation in **MB/op** (`gc.alloc.rate.norm`); lower is better.
+Development snapshot **v1.1.1-SNAPSHOT** (`9da4adc`), measured on 2026-06-13 with JDK 25.0.1 on Intel Core i7-6820HQ (8 threads, Windows host). JMH average time per correlation matrix in **ms/op** (± 99.9% confidence interval) and heap allocated per calculation in **MB/op** (`gc.alloc.rate.norm`); lower is better.
+
+#### Pearson correlation
 
 **`STANDARD`** (default)
 
 | rows × cols | double | float | double alloc | float alloc |
 |---|---|---|---|---|
 | 1,000 × 10 | 0.06 ± 0.00 | 0.08 ± 0.00 | 0.08 | 0.04 |
-| 10,000 × 100 | 9.07 ± 0.06 | 10.42 ± 0.49 | 8.09 | 4.05 |
-| 100,000 × 100 | 202.93 ± 4.49 | 113.82 ± 6.39 | 80.09 | 40.05 |
-| 10,000 × 1,000 | 1,291.42 ± 52.65 | 1,039.06 ± 206.65 | 88.03 | 44.03 |
+| 10,000 × 100 | 9.12 ± 0.45 | 10.34 ± 0.12 | 8.09 | 4.05 |
+| 100,000 × 100 | 201.58 ± 3.23 | 112.55 ± 1.62 | 80.09 | 40.05 |
+| 10,000 × 1,000 | 1,295.25 ± 69.95 | 1,034.47 ± 135.78 | 88.03 | 44.03 |
 
 **`HIGH_PERFORMANCE`**
 
 | rows × cols | double | float | double alloc | float alloc |
 |---|---|---|---|---|
 | 1,000 × 10 | 0.06 ± 0.00 | 0.07 ± 0.00 | 0.08 | 0.04 |
-| 10,000 × 100 | 6.45 ± 0.11 | 7.31 ± 0.07 | 8.09 | 4.05 |
-| 100,000 × 100 | 88.47 ± 3.51 | 75.95 ± 1.60 | 80.09 | 40.05 |
-| 10,000 × 1,000 | 507.04 ± 28.56 | 614.17 ± 56.63 | 88.04 | 44.04 |
+| 10,000 × 100 | 6.46 ± 0.11 | 7.30 ± 0.08 | 8.09 | 4.05 |
+| 100,000 × 100 | 88.94 ± 4.16 | 79.09 ± 20.35 | 80.09 | 40.05 |
+| 10,000 × 1,000 | 504.32 ± 36.61 | 610.30 ± 34.70 | 88.04 | 44.04 |
 
 **`VECTORIZED`**
 
 | rows × cols | double | float | double alloc | float alloc |
 |---|---|---|---|---|
-| 1,000 × 10 | 0.04 ± 0.00 | 0.06 ± 0.00 | 0.08 | 0.04 |
-| 10,000 × 100 | 3.09 ± 0.08 | 1.67 ± 0.05 | 8.09 | 4.05 |
-| 100,000 × 100 | 85.17 ± 2.12 | 37.37 ± 0.50 | 80.09 | 40.05 |
-| 10,000 × 1,000 | 331.89 ± 12.12 | 138.80 ± 10.31 | 88.04 | 44.04 |
+| 1,000 × 10 | 0.05 ± 0.00 | 0.06 ± 0.00 | 0.08 | 0.04 |
+| 10,000 × 100 | 3.08 ± 0.06 | 1.61 ± 0.02 | 8.09 | 4.05 |
+| 100,000 × 100 | 85.66 ± 5.01 | 37.09 ± 1.60 | 80.09 | 40.05 |
+| 10,000 × 1,000 | 332.36 ± 14.20 | 140.84 ± 10.19 | 88.04 | 44.04 |
+
+#### Partial correlation
+
+**`STANDARD`** (default)
+
+| rows × cols | double | float | double alloc | float alloc |
+|---|---|---|---|---|
+| 1,000 × 10 | 0.06 ± 0.00 | 0.09 ± 0.00 | 0.08 | 0.05 |
+| 10,000 × 100 | 10.82 ± 0.71 | 11.16 ± 0.11 | 8.41 | 4.45 |
+| 100,000 × 100 | 282.68 ± 26.96 | 124.50 ± 4.29 | 80.41 | 40.45 |
+| 10,000 × 1,000 | 2,457.13 ± 86.92 | 1,827.52 ± 145.02 | 120.04 | 84.03 |
+
+**`HIGH_PERFORMANCE`**
+
+| rows × cols | double | float | double alloc | float alloc |
+|---|---|---|---|---|
+| 1,000 × 10 | 0.07 ± 0.03 | 0.08 ± 0.00 | 0.08 | 0.05 |
+| 10,000 × 100 | 8.35 ± 1.13 | 8.14 ± 0.39 | 8.41 | 4.45 |
+| 100,000 × 100 | 151.48 ± 78.16 | 83.97 ± 7.12 | 80.41 | 40.45 |
+| 10,000 × 1,000 | 1,509.31 ± 656.92 | 1,362.76 ± 70.51 | 120.04 | 84.04 |
+
+**`VECTORIZED`**
+
+| rows × cols | double | float | double alloc | float alloc |
+|---|---|---|---|---|
+| 1,000 × 10 | 0.05 ± 0.00 | 0.06 ± 0.00 | 0.08 | 0.05 |
+| 10,000 × 100 | 4.49 ± 0.45 | 2.90 ± 0.03 | 8.41 | 4.45 |
+| 100,000 × 100 | 110.97 ± 10.13 | 42.79 ± 1.02 | 80.41 | 40.45 |
+| 10,000 × 1,000 | 1,208.51 ± 127.64 | 913.34 ± 41.30 | 120.04 | 84.04 |
+
+#### Spearman correlation
+
+**`STANDARD`** (default)
+
+| rows × cols | double | float | double alloc | float alloc |
+|---|---|---|---|---|
+| 1,000 × 10 | 1.17 ± 0.01 | 1.16 ± 0.03 | 0.40 | 0.24 |
+| 10,000 × 100 | 144.25 ± 3.51 | 137.57 ± 4.76 | 40.09 | 24.05 |
+| 100,000 × 100 | 1,858.63 ± 76.48 | 1,609.31 ± 26.31 | 400.10 | 240.06 |
+| 10,000 × 1,000 | 2,636.81 ± 142.98 | 2,316.76 ± 117.80 | 408.10 | 244.10 |
+
+**`HIGH_PERFORMANCE`**
+
+| rows × cols | double | float | double alloc | float alloc |
+|---|---|---|---|---|
+| 1,000 × 10 | 1.18 ± 0.06 | 1.16 ± 0.12 | 0.40 | 0.24 |
+| 10,000 × 100 | 139.75 ± 4.06 | 135.21 ± 8.77 | 40.10 | 24.06 |
+| 100,000 × 100 | 1,741.87 ± 38.30 | 1,576.99 ± 43.18 | 400.10 | 240.06 |
+| 10,000 × 1,000 | 1,842.28 ± 69.23 | 1,883.66 ± 100.34 | 408.11 | 244.11 |
+
+**`VECTORIZED`**
+
+| rows × cols | double | float | double alloc | float alloc |
+|---|---|---|---|---|
+| 1,000 × 10 | 1.15 ± 0.02 | 1.15 ± 0.03 | 0.40 | 0.24 |
+| 10,000 × 100 | 139.14 ± 2.52 | 129.06 ± 5.79 | 40.10 | 24.06 |
+| 100,000 × 100 | 1,714.26 ± 49.24 | 1,533.87 ± 26.11 | 400.10 | 240.06 |
+| 10,000 × 1,000 | 1,674.98 ± 50.22 | 1,404.38 ± 53.30 | 408.11 | 244.11 |
 <!-- benchmark-snapshot:end -->
 
 ### Running them yourself
