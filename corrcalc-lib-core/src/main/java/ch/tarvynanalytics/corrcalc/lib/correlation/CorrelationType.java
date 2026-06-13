@@ -2,8 +2,6 @@ package ch.tarvynanalytics.corrcalc.lib.correlation;
 
 /**
  * The supported correlation coefficient types.
- * <p>
- * Future candidates: Kendall.
  */
 public enum CorrelationType {
 
@@ -21,5 +19,11 @@ public enum CorrelationType {
      * Spearman rank correlation: the Pearson correlation of the columns' ranks,
      * measuring monotonic (not necessarily linear) association.
      */
-    SPEARMAN
+    SPEARMAN,
+
+    /**
+     * Kendall rank correlation (tau-b): ordinal association measured from the
+     * balance of concordant and discordant pairs, with the tie correction.
+     */
+    KENDALL
 }
