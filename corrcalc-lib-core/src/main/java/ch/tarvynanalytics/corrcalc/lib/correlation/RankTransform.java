@@ -7,16 +7,17 @@ package ch.tarvynanalytics.corrcalc.lib.correlation;
  * occupy positions {@code r..r+g-1} all receive their average rank
  * {@code r + (g-1)/2}.
  * <p>
- * Sorting is a stable merge sort that co-moves a contiguous copy of the values
- * and their original indices, so every comparison reads the value array
- * sequentially rather than chasing scattered indices back into the source — the
- * difference between an L1-resident sort and one bound by L2 latency on long
- * columns. Only small scratch arrays are allocated per column (no boxing). The
- * element type is read and written in place; double ranks are exact, and float
- * ranks are exact for any realistic row count (integers and halves up to
- * {@code 2^24}).
+ * Sorting is a stable merge sort over an {@code int} index array (no boxing), so
+ * only two small scratch arrays are allocated per column. The element type is
+ * read and written in place; double ranks are exact, and float ranks are exact
+ * for any realistic row count (integers and halves up to {@code 2^24}).
  */
 final class RankTransform {
+
+    @FunctionalInterface
+    interface IndexComparator {
+        int compare(int a, int b);
+    }
 
     private RankTransform() {
         // no instance
@@ -24,20 +25,12 @@ final class RankTransform {
 
     /** Writes the average ranks of {@code src[offset..offset+n)} into {@code dst}. */
     static void rankColumn(double[] src, double[] dst, int offset, int n) {
-        double[] values = new double[n];
-        int[] order = new int[n];
-        for (int i = 0; i < n; i++) {
-            values[i] = src[offset + i];
-            order[i] = i;
-        }
-        if (n > 1) {
-            mergeSort(values, order, new double[n], new int[n], 0, n);
-        }
+        int[] order = sortedIndices(n, (a, b) -> Double.compare(src[offset + a], src[offset + b]));
         int i = 0;
         while (i < n) {
-            double value = values[i];
+            double value = src[offset + order[i]];
             int j = i;
-            while (j + 1 < n && values[j + 1] == value) {
+            while (j + 1 < n && src[offset + order[j + 1]] == value) {
                 j++;
             }
             double averageRank = (i + j + 2) / 2.0; // 1-based positions (i+1)..(j+1)
@@ -50,20 +43,12 @@ final class RankTransform {
 
     /** Writes the average ranks of {@code src[offset..offset+n)} into {@code dst}. */
     static void rankColumn(float[] src, float[] dst, int offset, int n) {
-        float[] values = new float[n];
-        int[] order = new int[n];
-        for (int i = 0; i < n; i++) {
-            values[i] = src[offset + i];
-            order[i] = i;
-        }
-        if (n > 1) {
-            mergeSort(values, order, new float[n], new int[n], 0, n);
-        }
+        int[] order = sortedIndices(n, (a, b) -> Float.compare(src[offset + a], src[offset + b]));
         int i = 0;
         while (i < n) {
-            float value = values[i];
+            float value = src[offset + order[i]];
             int j = i;
-            while (j + 1 < n && values[j + 1] == value) {
+            while (j + 1 < n && src[offset + order[j + 1]] == value) {
                 j++;
             }
             float averageRank = (float) ((i + j + 2) / 2.0);
@@ -74,81 +59,40 @@ final class RankTransform {
         }
     }
 
-    private static void mergeSort(double[] values, int[] order, double[] valueTmp, int[] orderTmp,
-                                  int lo, int hi) {
-        if (hi - lo < 2) {
-            return;
+    private static int[] sortedIndices(int n, IndexComparator comparator) {
+        int[] indices = new int[n];
+        for (int i = 0; i < n; i++) {
+            indices[i] = i;
         }
-        int mid = (lo + hi) >>> 1;
-        mergeSort(values, order, valueTmp, orderTmp, lo, mid);
-        mergeSort(values, order, valueTmp, orderTmp, mid, hi);
-        int i = lo;
-        int j = mid;
-        int k = lo;
-        while (i < mid && j < hi) {
-            if (values[i] <= values[j]) { // <= keeps the merge stable
-                valueTmp[k] = values[i];
-                orderTmp[k] = order[i];
-                i++;
-            } else {
-                valueTmp[k] = values[j];
-                orderTmp[k] = order[j];
-                j++;
-            }
-            k++;
+        if (n > 1) {
+            mergeSort(indices, new int[n], 0, n, comparator);
         }
-        while (i < mid) {
-            valueTmp[k] = values[i];
-            orderTmp[k] = order[i];
-            i++;
-            k++;
-        }
-        while (j < hi) {
-            valueTmp[k] = values[j];
-            orderTmp[k] = order[j];
-            j++;
-            k++;
-        }
-        System.arraycopy(valueTmp, lo, values, lo, hi - lo);
-        System.arraycopy(orderTmp, lo, order, lo, hi - lo);
+        return indices;
     }
 
-    private static void mergeSort(float[] values, int[] order, float[] valueTmp, int[] orderTmp,
-                                  int lo, int hi) {
+    private static void mergeSort(int[] a, int[] tmp, int lo, int hi, IndexComparator comparator) {
         if (hi - lo < 2) {
             return;
         }
         int mid = (lo + hi) >>> 1;
-        mergeSort(values, order, valueTmp, orderTmp, lo, mid);
-        mergeSort(values, order, valueTmp, orderTmp, mid, hi);
+        mergeSort(a, tmp, lo, mid, comparator);
+        mergeSort(a, tmp, mid, hi, comparator);
         int i = lo;
         int j = mid;
         int k = lo;
         while (i < mid && j < hi) {
-            if (values[i] <= values[j]) { // <= keeps the merge stable
-                valueTmp[k] = values[i];
-                orderTmp[k] = order[i];
-                i++;
+            if (comparator.compare(a[i], a[j]) <= 0) { // <= keeps the merge stable
+                tmp[k++] = a[i++];
             } else {
-                valueTmp[k] = values[j];
-                orderTmp[k] = order[j];
-                j++;
+                tmp[k++] = a[j++];
             }
-            k++;
         }
         while (i < mid) {
-            valueTmp[k] = values[i];
-            orderTmp[k] = order[i];
-            i++;
-            k++;
+            tmp[k++] = a[i++];
         }
         while (j < hi) {
-            valueTmp[k] = values[j];
-            orderTmp[k] = order[j];
-            j++;
-            k++;
+            tmp[k++] = a[j++];
         }
-        System.arraycopy(valueTmp, lo, values, lo, hi - lo);
-        System.arraycopy(orderTmp, lo, order, lo, hi - lo);
+        System.arraycopy(tmp, lo, a, lo, hi - lo);
     }
 }
