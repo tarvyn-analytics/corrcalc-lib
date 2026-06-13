@@ -99,8 +99,34 @@ published numbers (shared runners are too noisy); a manual-dispatch
 ### Latest release
 
 <!-- benchmark-release:start -->
-_No released version benchmarked yet — this table is filled as part of the
-release procedure._
+Release **v1.1.0** (`2907d76`), measured on 2026-06-13 with JDK 25.0.1 on Intel Core i7-6820HQ (8 threads, Windows host). JMH average time per correlation matrix in **ms/op** (± 99.9% confidence interval) and heap allocated per calculation in **MB/op** (`gc.alloc.rate.norm`); lower is better.
+
+**`STANDARD`** (default)
+
+| rows × cols | double | float | double alloc | float alloc |
+|---|---|---|---|---|
+| 1,000 × 10 | 0.06 ± 0.01 | 0.08 ± 0.00 | 0.08 | 0.04 |
+| 10,000 × 100 | 9.54 ± 0.67 | 10.41 ± 0.19 | 8.09 | 4.05 |
+| 100,000 × 100 | 227.45 ± 19.17 | 123.29 ± 6.78 | 80.09 | 40.05 |
+| 10,000 × 1,000 | 1,432.24 ± 44.35 | 1,120.25 ± 156.43 | 88.03 | 44.03 |
+
+**`HIGH_PERFORMANCE`**
+
+| rows × cols | double | float | double alloc | float alloc |
+|---|---|---|---|---|
+| 1,000 × 10 | 0.06 ± 0.01 | 0.08 ± 0.00 | 0.08 | 0.04 |
+| 10,000 × 100 | 6.68 ± 0.13 | 7.44 ± 0.42 | 8.09 | 4.05 |
+| 100,000 × 100 | 99.69 ± 7.39 | 81.65 ± 0.99 | 80.09 | 40.05 |
+| 10,000 × 1,000 | 550.52 ± 26.16 | 644.96 ± 38.30 | 88.04 | 44.04 |
+
+**`VECTORIZED`**
+
+| rows × cols | double | float | double alloc | float alloc |
+|---|---|---|---|---|
+| 1,000 × 10 | 0.05 ± 0.01 | 0.06 ± 0.00 | 0.08 | 0.04 |
+| 10,000 × 100 | 3.29 ± 0.17 | 1.63 ± 0.02 | 8.09 | 4.05 |
+| 100,000 × 100 | 96.26 ± 4.82 | 41.35 ± 0.52 | 80.09 | 40.05 |
+| 10,000 × 1,000 | 376.83 ± 8.51 | 151.37 ± 4.34 | 88.04 | 44.04 |
 <!-- benchmark-release:end -->
 
 ### Development snapshot
