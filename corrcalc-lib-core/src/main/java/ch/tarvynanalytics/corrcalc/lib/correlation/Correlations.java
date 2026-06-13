@@ -20,6 +20,9 @@ public final class Correlations {
     private static final ConcurrentMap<Profile, CorrelationCalculator> PEARSON_BY_PROFILE =
             new ConcurrentHashMap<>();
 
+    private static final ConcurrentMap<Profile, CorrelationCalculator> PARTIAL_BY_PROFILE =
+            new ConcurrentHashMap<>();
+
     // utility class/factory
     private Correlations() {
         // no instance
@@ -45,6 +48,26 @@ public final class Correlations {
     }
 
     /**
+     * Returns a calculator for the partial correlation matrix using the
+     * {@link Profile#STANDARD} profile.
+     */
+    public static CorrelationCalculator partial() {
+        return partial(Profile.STANDARD);
+    }
+
+    /**
+     * Returns a calculator for the partial correlation matrix using the given
+     * calculation profile. The profile drives the underlying Pearson
+     * computation; the precision-matrix inversion is always double precision.
+     */
+    public static CorrelationCalculator partial(Profile profile) {
+        if (profile == null) {
+            throw new InvalidInputException("Calculation profile must not be null");
+        }
+        return PARTIAL_BY_PROFILE.computeIfAbsent(profile, Correlations::newPartial);
+    }
+
+    /**
      * Returns the calculator for the given correlation type using the
      * {@link Profile#STANDARD} profile.
      */
@@ -62,6 +85,7 @@ public final class Correlations {
         }
         return switch (type) {
             case PEARSON -> pearson(profile);
+            case PARTIAL -> partial(profile);
         };
     }
 
@@ -77,6 +101,15 @@ public final class Correlations {
             }
             case VECTORIZED -> newVectorizedPearson();
         };
+    }
+
+    /**
+     * Partial correlation reuses the Pearson calculator of the same profile for
+     * the correlation matrix, then inverts it; the inversion is profile-agnostic
+     * double-precision linear algebra.
+     */
+    private static CorrelationCalculator newPartial(Profile profile) {
+        return new PartialCorrelationCalculator(pearson(profile));
     }
 
     /**
