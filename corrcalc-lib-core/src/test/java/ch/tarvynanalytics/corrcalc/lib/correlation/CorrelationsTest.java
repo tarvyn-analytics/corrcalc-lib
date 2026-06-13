@@ -132,6 +132,42 @@ class CorrelationsTest {
     }
 
     @Test
+    void kendall_ReturnsSharedKendallCalculator() {
+        CorrelationCalculator calculator = Correlations.kendall();
+
+        assertInstanceOf(KendallCorrelationCalculator.class, calculator);
+        assertSame(calculator, Correlations.kendall());
+    }
+
+    @Test
+    void of_KendallType_ReturnsSameInstanceAsKendallFactory() {
+        assertSame(Correlations.kendall(), Correlations.of(CorrelationType.KENDALL));
+    }
+
+    @Test
+    void kendall_StandardProfile_ReturnsSameInstanceAsDefaultFactory() {
+        assertSame(Correlations.kendall(), Correlations.kendall(Profile.STANDARD));
+    }
+
+    @Test
+    void kendall_SameProfileTwice_ReturnsSharedInstance() {
+        for (Profile profile : Profile.values()) {
+            assertSame(Correlations.kendall(profile), Correlations.kendall(profile));
+        }
+    }
+
+    @Test
+    void kendall_NullProfile_ThrowsInvalidInput() {
+        assertThrows(InvalidInputException.class, () -> Correlations.kendall(null));
+    }
+
+    @Test
+    void of_KendallTypeWithProfile_ReturnsSameInstanceAsProfiledKendallFactory() {
+        assertSame(Correlations.kendall(Profile.HIGH_PERFORMANCE),
+                Correlations.of(CorrelationType.KENDALL, Profile.HIGH_PERFORMANCE));
+    }
+
+    @Test
     void pearson_SimpleInput_CalculatesCorrelation() {
         DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, 2},

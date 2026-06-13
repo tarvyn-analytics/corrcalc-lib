@@ -26,8 +26,9 @@ PROFILE_ORDER = ["STANDARD", "HIGH_PERFORMANCE", "VECTORIZED"]
 
 # correlation types, keyed by the benchmark-method prefix they emit
 # (pearsonDouble, partialDouble, spearmanDouble, ...)
-TYPE_ORDER = ["pearson", "partial", "spearman"]
-TYPE_LABELS = {"pearson": "Pearson", "partial": "Partial", "spearman": "Spearman"}
+TYPE_ORDER = ["pearson", "partial", "spearman", "kendall"]
+TYPE_LABELS = {"pearson": "Pearson", "partial": "Partial", "spearman": "Spearman",
+               "kendall": "Kendall"}
 
 
 def type_of(entry):

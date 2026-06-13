@@ -26,6 +26,9 @@ public final class Correlations {
     private static final ConcurrentMap<Profile, CorrelationCalculator> SPEARMAN_BY_PROFILE =
             new ConcurrentHashMap<>();
 
+    private static final ConcurrentMap<Profile, CorrelationCalculator> KENDALL_BY_PROFILE =
+            new ConcurrentHashMap<>();
+
     // utility class/factory
     private Correlations() {
         // no instance
@@ -91,6 +94,27 @@ public final class Correlations {
     }
 
     /**
+     * Returns a calculator for the Kendall (tau-b) rank correlation matrix using
+     * the {@link Profile#STANDARD} profile.
+     */
+    public static CorrelationCalculator kendall() {
+        return kendall(Profile.STANDARD);
+    }
+
+    /**
+     * Returns a calculator for the Kendall (tau-b) rank correlation matrix. The
+     * profile is accepted for API uniformity but does not change the
+     * computation: Kendall's tau is sort-based and identical on every profile,
+     * and never requires the Vector API module.
+     */
+    public static CorrelationCalculator kendall(Profile profile) {
+        if (profile == null) {
+            throw new InvalidInputException("Calculation profile must not be null");
+        }
+        return KENDALL_BY_PROFILE.computeIfAbsent(profile, Correlations::newKendall);
+    }
+
+    /**
      * Returns the calculator for the given correlation type using the
      * {@link Profile#STANDARD} profile.
      */
@@ -110,6 +134,7 @@ public final class Correlations {
             case PEARSON -> pearson(profile);
             case PARTIAL -> partial(profile);
             case SPEARMAN -> spearman(profile);
+            case KENDALL -> kendall(profile);
         };
     }
 
@@ -142,6 +167,14 @@ public final class Correlations {
      */
     private static CorrelationCalculator newSpearman(Profile profile) {
         return new SpearmanCorrelationCalculator(pearson(profile));
+    }
+
+    /**
+     * Kendall's tau is computed by the same sort-based algorithm for every
+     * profile, so the profile argument only affects identity caching here.
+     */
+    private static CorrelationCalculator newKendall(Profile profile) {
+        return new KendallCorrelationCalculator();
     }
 
     /**
