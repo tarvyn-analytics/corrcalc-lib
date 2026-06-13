@@ -153,7 +153,7 @@ Release **v1.1.0** (`2907d76`), measured on 2026-06-13 with JDK 25.0.1 on Intel 
 ### Development snapshot
 
 <!-- benchmark-snapshot:start -->
-Development snapshot **v1.1.1-SNAPSHOT** (`9da4adc`), measured on 2026-06-13 with JDK 25.0.1 on Intel Core i7-6820HQ (8 threads, Windows host). JMH average time per correlation matrix in **ms/op** (± 99.9% confidence interval) and heap allocated per calculation in **MB/op** (`gc.alloc.rate.norm`); lower is better.
+Development snapshot **v1.1.1-SNAPSHOT** (`c7a0f44`), measured on 2026-06-13 with JDK 25.0.1 on Intel Core i7-6820HQ (8 threads, Windows host). JMH average time per correlation matrix in **ms/op** (± 99.9% confidence interval) and heap allocated per calculation in **MB/op** (`gc.alloc.rate.norm`); lower is better.
 
 #### Pearson correlation
 
@@ -161,28 +161,28 @@ Development snapshot **v1.1.1-SNAPSHOT** (`9da4adc`), measured on 2026-06-13 wit
 
 | rows × cols | double | float | double alloc | float alloc |
 |---|---|---|---|---|
-| 1,000 × 10 | 0.06 ± 0.00 | 0.08 ± 0.00 | 0.08 | 0.04 |
-| 10,000 × 100 | 9.12 ± 0.45 | 10.34 ± 0.12 | 8.09 | 4.05 |
-| 100,000 × 100 | 201.58 ± 3.23 | 112.55 ± 1.62 | 80.09 | 40.05 |
-| 10,000 × 1,000 | 1,295.25 ± 69.95 | 1,034.47 ± 135.78 | 88.03 | 44.03 |
+| 1,000 × 10 | 0.06 ± 0.00 | 0.09 ± 0.00 | 0.08 | 0.04 |
+| 10,000 × 100 | 9.58 ± 0.27 | 11.31 ± 4.59 | 8.09 | 4.05 |
+| 100,000 × 100 | 225.12 ± 9.97 | 113.76 ± 4.08 | 80.09 | 40.05 |
+| 10,000 × 1,000 | 1,360.20 ± 254.17 | 1,040.82 ± 118.66 | 88.03 | 44.03 |
 
 **`HIGH_PERFORMANCE`**
 
 | rows × cols | double | float | double alloc | float alloc |
 |---|---|---|---|---|
 | 1,000 × 10 | 0.06 ± 0.00 | 0.07 ± 0.00 | 0.08 | 0.04 |
-| 10,000 × 100 | 6.46 ± 0.11 | 7.30 ± 0.08 | 8.09 | 4.05 |
-| 100,000 × 100 | 88.94 ± 4.16 | 79.09 ± 20.35 | 80.09 | 40.05 |
-| 10,000 × 1,000 | 504.32 ± 36.61 | 610.30 ± 34.70 | 88.04 | 44.04 |
+| 10,000 × 100 | 6.56 ± 0.35 | 7.35 ± 0.12 | 8.09 | 4.05 |
+| 100,000 × 100 | 88.37 ± 1.51 | 76.02 ± 1.17 | 80.09 | 40.05 |
+| 10,000 × 1,000 | 515.13 ± 8.69 | 625.66 ± 61.68 | 88.04 | 44.04 |
 
 **`VECTORIZED`**
 
 | rows × cols | double | float | double alloc | float alloc |
 |---|---|---|---|---|
 | 1,000 × 10 | 0.05 ± 0.00 | 0.06 ± 0.00 | 0.08 | 0.04 |
-| 10,000 × 100 | 3.08 ± 0.06 | 1.61 ± 0.02 | 8.09 | 4.05 |
-| 100,000 × 100 | 85.66 ± 5.01 | 37.09 ± 1.60 | 80.09 | 40.05 |
-| 10,000 × 1,000 | 332.36 ± 14.20 | 140.84 ± 10.19 | 88.04 | 44.04 |
+| 10,000 × 100 | 2.99 ± 0.05 | 1.62 ± 0.05 | 8.09 | 4.05 |
+| 100,000 × 100 | 85.35 ± 2.08 | 39.87 ± 1.31 | 80.09 | 40.05 |
+| 10,000 × 1,000 | 352.87 ± 83.14 | 149.96 ± 12.83 | 88.04 | 44.04 |
 
 #### Partial correlation
 
@@ -190,28 +190,28 @@ Development snapshot **v1.1.1-SNAPSHOT** (`9da4adc`), measured on 2026-06-13 wit
 
 | rows × cols | double | float | double alloc | float alloc |
 |---|---|---|---|---|
-| 1,000 × 10 | 0.06 ± 0.00 | 0.09 ± 0.00 | 0.08 | 0.05 |
-| 10,000 × 100 | 10.82 ± 0.71 | 11.16 ± 0.11 | 8.41 | 4.45 |
-| 100,000 × 100 | 282.68 ± 26.96 | 124.50 ± 4.29 | 80.41 | 40.45 |
-| 10,000 × 1,000 | 2,457.13 ± 86.92 | 1,827.52 ± 145.02 | 120.04 | 84.03 |
+| 1,000 × 10 | 0.06 ± 0.01 | 0.09 ± 0.00 | 0.08 | 0.05 |
+| 10,000 × 100 | 10.80 ± 0.27 | 11.18 ± 0.54 | 8.41 | 4.45 |
+| 100,000 × 100 | 259.50 ± 43.83 | 123.92 ± 4.18 | 80.41 | 40.45 |
+| 10,000 × 1,000 | 2,361.76 ± 248.17 | 1,855.47 ± 70.42 | 120.04 | 84.03 |
 
 **`HIGH_PERFORMANCE`**
 
 | rows × cols | double | float | double alloc | float alloc |
 |---|---|---|---|---|
-| 1,000 × 10 | 0.07 ± 0.03 | 0.08 ± 0.00 | 0.08 | 0.05 |
-| 10,000 × 100 | 8.35 ± 1.13 | 8.14 ± 0.39 | 8.41 | 4.45 |
-| 100,000 × 100 | 151.48 ± 78.16 | 83.97 ± 7.12 | 80.41 | 40.45 |
-| 10,000 × 1,000 | 1,509.31 ± 656.92 | 1,362.76 ± 70.51 | 120.04 | 84.04 |
+| 1,000 × 10 | 0.06 ± 0.00 | 0.08 ± 0.00 | 0.08 | 0.05 |
+| 10,000 × 100 | 7.90 ± 0.56 | 8.08 ± 0.19 | 8.41 | 4.45 |
+| 100,000 × 100 | 107.70 ± 18.66 | 82.51 ± 2.66 | 80.41 | 40.45 |
+| 10,000 × 1,000 | 1,292.64 ± 42.97 | 1,360.35 ± 94.43 | 120.04 | 84.04 |
 
 **`VECTORIZED`**
 
 | rows × cols | double | float | double alloc | float alloc |
 |---|---|---|---|---|
 | 1,000 × 10 | 0.05 ± 0.00 | 0.06 ± 0.00 | 0.08 | 0.05 |
-| 10,000 × 100 | 4.49 ± 0.45 | 2.90 ± 0.03 | 8.41 | 4.45 |
-| 100,000 × 100 | 110.97 ± 10.13 | 42.79 ± 1.02 | 80.41 | 40.45 |
-| 10,000 × 1,000 | 1,208.51 ± 127.64 | 913.34 ± 41.30 | 120.04 | 84.04 |
+| 10,000 × 100 | 3.93 ± 0.09 | 2.89 ± 0.03 | 8.41 | 4.45 |
+| 100,000 × 100 | 97.46 ± 4.01 | 41.83 ± 0.81 | 80.41 | 40.45 |
+| 10,000 × 1,000 | 1,106.62 ± 96.30 | 925.41 ± 60.08 | 120.04 | 84.04 |
 
 #### Spearman correlation
 
@@ -219,29 +219,59 @@ Development snapshot **v1.1.1-SNAPSHOT** (`9da4adc`), measured on 2026-06-13 wit
 
 | rows × cols | double | float | double alloc | float alloc |
 |---|---|---|---|---|
-| 1,000 × 10 | 1.17 ± 0.01 | 1.16 ± 0.03 | 0.40 | 0.24 |
-| 10,000 × 100 | 144.25 ± 3.51 | 137.57 ± 4.76 | 40.09 | 24.05 |
-| 100,000 × 100 | 1,858.63 ± 76.48 | 1,609.31 ± 26.31 | 400.10 | 240.06 |
-| 10,000 × 1,000 | 2,636.81 ± 142.98 | 2,316.76 ± 117.80 | 408.10 | 244.10 |
+| 1,000 × 10 | 1.11 ± 0.02 | 1.09 ± 0.08 | 0.24 | 0.16 |
+| 10,000 × 100 | 141.02 ± 1.71 | 142.25 ± 1.28 | 24.09 | 16.05 |
+| 100,000 × 100 | 1,962.95 ± 51.95 | 1,737.98 ± 40.77 | 240.10 | 160.06 |
+| 10,000 × 1,000 | 2,692.63 ± 276.79 | 2,272.26 ± 140.07 | 248.09 | 164.09 |
 
 **`HIGH_PERFORMANCE`**
 
 | rows × cols | double | float | double alloc | float alloc |
 |---|---|---|---|---|
-| 1,000 × 10 | 1.18 ± 0.06 | 1.16 ± 0.12 | 0.40 | 0.24 |
-| 10,000 × 100 | 139.75 ± 4.06 | 135.21 ± 8.77 | 40.10 | 24.06 |
-| 100,000 × 100 | 1,741.87 ± 38.30 | 1,576.99 ± 43.18 | 400.10 | 240.06 |
-| 10,000 × 1,000 | 1,842.28 ± 69.23 | 1,883.66 ± 100.34 | 408.11 | 244.11 |
+| 1,000 × 10 | 1.07 ± 0.03 | 1.09 ± 0.02 | 0.24 | 0.16 |
+| 10,000 × 100 | 133.37 ± 4.70 | 137.08 ± 6.56 | 24.09 | 16.05 |
+| 100,000 × 100 | 1,772.79 ± 21.86 | 1,687.07 ± 21.62 | 240.10 | 160.06 |
+| 10,000 × 1,000 | 1,780.16 ± 48.43 | 1,846.13 ± 42.29 | 248.10 | 164.10 |
 
 **`VECTORIZED`**
 
 | rows × cols | double | float | double alloc | float alloc |
 |---|---|---|---|---|
-| 1,000 × 10 | 1.15 ± 0.02 | 1.15 ± 0.03 | 0.40 | 0.24 |
-| 10,000 × 100 | 139.14 ± 2.52 | 129.06 ± 5.79 | 40.10 | 24.06 |
-| 100,000 × 100 | 1,714.26 ± 49.24 | 1,533.87 ± 26.11 | 400.10 | 240.06 |
-| 10,000 × 1,000 | 1,674.98 ± 50.22 | 1,404.38 ± 53.30 | 408.11 | 244.11 |
+| 1,000 × 10 | 1.06 ± 0.03 | 1.07 ± 0.02 | 0.24 | 0.16 |
+| 10,000 × 100 | 131.01 ± 1.36 | 133.40 ± 3.07 | 24.09 | 16.05 |
+| 100,000 × 100 | 1,778.50 ± 20.91 | 1,642.64 ± 32.24 | 240.10 | 160.06 |
+| 10,000 × 1,000 | 1,648.89 ± 132.31 | 1,369.72 ± 33.50 | 248.10 | 164.10 |
 <!-- benchmark-snapshot:end -->
+
+### Choosing a profile
+
+`HIGH_PERFORMANCE` and `VECTORIZED` only accelerate the **Pearson correlation
+kernel** (the register-blocked / SIMD+FMA dot products). How much they help
+therefore depends on how large a share of your statistic's runtime actually
+sits in that kernel — which changes sharply with the correlation type and the
+matrix shape. Approximate `STANDARD → VECTORIZED` speedup (double precision, on
+the reference machine):
+
+| rows × cols | Pearson | Partial | Spearman |
+|---|---|---|---|
+| 10,000 × 100 | ~3.2× | ~2.7× | ~1.1× |
+| 100,000 × 100 | ~2.6× | ~2.7× | ~1.1× |
+| 10,000 × 1,000 | ~3.9× | ~2.1× | ~1.6× |
+
+- **Pearson** scales best: almost all the work is the kernel, and the gain
+  grows with the variable count `p` as the `O(n·p²)` dot-product phase comes to
+  dominate.
+- **Partial** adds a scalar, un-vectorized `O(p³)` matrix inversion. It tracks
+  Pearson while `p` is small, but the inversion erodes the advantage as `p`
+  grows (≈2× at `p = 1,000`).
+- **Spearman** is bounded by the un-vectorized per-column ranking, which the
+  profiles never touch — so the profile barely moves the needle until `p` is
+  large enough that the Pearson phase resurfaces.
+
+Rule of thumb: reach for `VECTORIZED` (or `HIGH_PERFORMANCE` when the Vector API
+is unavailable) for **Pearson** and **partial** correlation, the more so with
+many variables; for **Spearman**, `STANDARD` is essentially as fast, since
+ranking — not the correlation kernel — is the bottleneck.
 
 ### Running them yourself
 
