@@ -60,6 +60,42 @@ class CorrelationsTest {
     }
 
     @Test
+    void partial_ReturnsSharedPartialCalculator() {
+        CorrelationCalculator calculator = Correlations.partial();
+
+        assertInstanceOf(PartialCorrelationCalculator.class, calculator);
+        assertSame(calculator, Correlations.partial());
+    }
+
+    @Test
+    void of_PartialType_ReturnsSameInstanceAsPartialFactory() {
+        assertSame(Correlations.partial(), Correlations.of(CorrelationType.PARTIAL));
+    }
+
+    @Test
+    void partial_StandardProfile_ReturnsSameInstanceAsDefaultFactory() {
+        assertSame(Correlations.partial(), Correlations.partial(Profile.STANDARD));
+    }
+
+    @Test
+    void partial_SameProfileTwice_ReturnsSharedInstance() {
+        for (Profile profile : Profile.values()) {
+            assertSame(Correlations.partial(profile), Correlations.partial(profile));
+        }
+    }
+
+    @Test
+    void partial_NullProfile_ThrowsInvalidInput() {
+        assertThrows(InvalidInputException.class, () -> Correlations.partial(null));
+    }
+
+    @Test
+    void of_PartialTypeWithProfile_ReturnsSameInstanceAsProfiledPartialFactory() {
+        assertSame(Correlations.partial(Profile.HIGH_PERFORMANCE),
+                Correlations.of(CorrelationType.PARTIAL, Profile.HIGH_PERFORMANCE));
+    }
+
+    @Test
     void pearson_SimpleInput_CalculatesCorrelation() {
         DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, 2},

@@ -37,6 +37,9 @@ DoubleMatrix prepared = preparation.prepare(data);
 //    Optionally pick a calculation profile (default: Profile.STANDARD)
 DoubleMatrix corr = Correlations.pearson().calculate(prepared);
 double r01 = corr.get(0, 1);
+
+//    ...or the partial correlation matrix (effect of all other variables removed)
+DoubleMatrix partial = Correlations.partial().calculate(prepared);
 ```
 
 ## Package structure
@@ -44,7 +47,7 @@ double r01 = corr.get(0, 1);
 ```
 ch.tarvynanalytics.corrcalc.lib/
 ├── matrix/       # DoubleMatrix & FloatMatrix — flat column-major storage
-├── correlation/  # CorrelationCalculator, CorrelationType, Correlations factory
+├── correlation/  # CorrelationCalculator, CorrelationType (Pearson, partial), Correlations factory
 ├── prep/         # DataPreparer steps: dropMissingRows, imputeMean, center, standardize
 ├── io/           # MatrixReader, CsvMatrixReader (whitespace-separated values)
 └── exception/    # CorrCalcException, InvalidInputException
@@ -63,6 +66,15 @@ ch.tarvynanalytics.corrcalc.lib/
 - **Parallelism adjusts to the machine.** Both phases fan out across columns on
   the ForkJoin common pool (sized to the available cores) once the estimated
   work crosses a threshold; small inputs stay on the calling thread.
+- **Partial correlation via the precision matrix.** `Correlations.partial()`
+  computes the Pearson matrix `R`, inverts it to the precision matrix
+  `P = R⁻¹` (Cholesky, since `R` is symmetric positive-definite), and reads off
+  `ρ_ij = −P_ij/√(P_ii·P_jj)`. It reuses every Pearson profile for the only
+  `O(n·p²)` work; the `O(p³)` inversion is always double precision (even for
+  float input) and negligible while `n ≫ p`. A constant column yields `NaN`
+  (as in Pearson); a singular `R` — collinear columns or fewer observations
+  than variables — has no precision matrix and is rejected with
+  `InvalidInputException`.
 - **Selectable calculation profiles.** `Correlations.pearson(Profile...)` picks
   the implementation strategy. Every profile computes the same statistic and
   passes the same test suite; they differ in inner-loop execution and JVM
