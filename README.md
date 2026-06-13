@@ -401,6 +401,40 @@ many variables; for the rank correlations the choice barely matters — **Spearm
 is ranking-bound and **Kendall** ignores the profile entirely, so `STANDARD` is
 as good as any.
 
+### Versus other pure-Java libraries
+
+How corrcalc compares to the best-performing pure-Java alternatives for a full
+Pearson correlation matrix (double precision, same seeded Gaussian data, on the
+reference machine; **ms/op**, lower is better):
+
+| rows × cols | corrcalc `STANDARD` | corrcalc `VECTORIZED` | ojAlgo | EJML | Commons Math |
+|---|---|---|---|---|---|
+| 1,000 × 10 | 0.05 | 0.04 | 0.33 | 0.11 | 0.58 |
+| 10,000 × 100 | 9.1 | 3.1 | 29.8 | 196.8 | 741.3 |
+| 100,000 × 100 | 296.9 | 151.2 | 399.5 | 8,245 | 15,566 |
+| 10,000 × 1,000 | 1,424.9 | 432.1 | 2,135 | 59,831 | 78,236 |
+
+corrcalc is fastest at every size — even the portable `STANDARD` profile beats
+every rival — and `VECTORIZED` is roughly **2.6–10× faster than the best rival
+(ojAlgo)** and **100–240× faster than Apache Commons Math**. The contenders:
+
+- **ojAlgo** — multi-threaded pure-Java matmul (`transpose().multiply()`); the
+  closest competitor, since it also parallelizes. corrcalc still wins through
+  the column-major, register-blocked and SIMD kernels purpose-built for the
+  tall-skinny correlation shape.
+- **EJML** — `CommonOps_DDRM.multInner`, single-threaded; competitive only on
+  tiny inputs.
+- **Apache Commons Math** — `PearsonsCorrelation`, the conventional choice;
+  single-threaded and pair-at-a-time, so it trails badly at scale.
+
+EJML and ojAlgo have no built-in correlation, so each got the idiomatic route a
+user would write (centre the columns, form `Xᶜᵀ·Xᶜ` with the library's matmul,
+normalize by the diagonal); Commons Math has a direct API. All produce the same
+matrix. These are quick-check numbers (single fork, short iterations) — the gaps
+are orders of magnitude so the ranking is unambiguous, but treat the absolute
+values as indicative. The rival libraries are **bench-scope dependencies only**;
+the published library stays zero-dependency.
+
 ### Running them yourself
 
 ```bash
