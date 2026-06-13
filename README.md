@@ -40,6 +40,9 @@ double r01 = corr.get(0, 1);
 
 //    ...or the partial correlation matrix (effect of all other variables removed)
 DoubleMatrix partial = Correlations.partial().calculate(prepared);
+
+//    ...or the Spearman rank correlation matrix (monotonic association)
+DoubleMatrix spearman = Correlations.spearman().calculate(prepared);
 ```
 
 ## Package structure
@@ -47,7 +50,7 @@ DoubleMatrix partial = Correlations.partial().calculate(prepared);
 ```
 ch.tarvynanalytics.corrcalc.lib/
 ├── matrix/       # DoubleMatrix & FloatMatrix — flat column-major storage
-├── correlation/  # CorrelationCalculator, CorrelationType (Pearson, partial), Correlations factory
+├── correlation/  # CorrelationCalculator, CorrelationType (Pearson, partial, Spearman), Correlations factory
 ├── prep/         # DataPreparer steps: dropMissingRows, imputeMean, center, standardize
 ├── io/           # MatrixReader, CsvMatrixReader (whitespace-separated values)
 └── exception/    # CorrCalcException, InvalidInputException
@@ -75,6 +78,12 @@ ch.tarvynanalytics.corrcalc.lib/
   (as in Pearson); a singular `R` — collinear columns or fewer observations
   than variables — has no precision matrix and is rejected with
   `InvalidInputException`.
+- **Spearman by ranking, then Pearson.** `Correlations.spearman()` replaces each
+  column with its average ranks (ties share their mean rank) and runs Pearson on
+  the ranks, so it measures monotonic rather than linear association and reuses
+  every profile and the precision contract unchanged. Ranking is an
+  `O(n·log n)` per-column merge sort over an `int` index array (no boxing); a
+  constant column has zero rank variance and so yields `NaN`, like Pearson.
 - **Selectable calculation profiles.** `Correlations.pearson(Profile...)` picks
   the implementation strategy. Every profile computes the same statistic and
   passes the same test suite; they differ in inner-loop execution and JVM

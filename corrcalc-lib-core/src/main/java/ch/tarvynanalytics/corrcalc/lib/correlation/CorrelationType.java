@@ -3,7 +3,7 @@ package ch.tarvynanalytics.corrcalc.lib.correlation;
 /**
  * The supported correlation coefficient types.
  * <p>
- * Future candidates: Spearman, Kendall.
+ * Future candidates: Kendall.
  */
 public enum CorrelationType {
 
@@ -15,5 +15,11 @@ public enum CorrelationType {
      * effect of all the other variables removed (the precision-matrix route over
      * the Pearson correlation matrix).
      */
-    PARTIAL
+    PARTIAL,
+
+    /**
+     * Spearman rank correlation: the Pearson correlation of the columns' ranks,
+     * measuring monotonic (not necessarily linear) association.
+     */
+    SPEARMAN
 }

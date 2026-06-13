@@ -96,6 +96,42 @@ class CorrelationsTest {
     }
 
     @Test
+    void spearman_ReturnsSharedSpearmanCalculator() {
+        CorrelationCalculator calculator = Correlations.spearman();
+
+        assertInstanceOf(SpearmanCorrelationCalculator.class, calculator);
+        assertSame(calculator, Correlations.spearman());
+    }
+
+    @Test
+    void of_SpearmanType_ReturnsSameInstanceAsSpearmanFactory() {
+        assertSame(Correlations.spearman(), Correlations.of(CorrelationType.SPEARMAN));
+    }
+
+    @Test
+    void spearman_StandardProfile_ReturnsSameInstanceAsDefaultFactory() {
+        assertSame(Correlations.spearman(), Correlations.spearman(Profile.STANDARD));
+    }
+
+    @Test
+    void spearman_SameProfileTwice_ReturnsSharedInstance() {
+        for (Profile profile : Profile.values()) {
+            assertSame(Correlations.spearman(profile), Correlations.spearman(profile));
+        }
+    }
+
+    @Test
+    void spearman_NullProfile_ThrowsInvalidInput() {
+        assertThrows(InvalidInputException.class, () -> Correlations.spearman(null));
+    }
+
+    @Test
+    void of_SpearmanTypeWithProfile_ReturnsSameInstanceAsProfiledSpearmanFactory() {
+        assertSame(Correlations.spearman(Profile.HIGH_PERFORMANCE),
+                Correlations.of(CorrelationType.SPEARMAN, Profile.HIGH_PERFORMANCE));
+    }
+
+    @Test
     void pearson_SimpleInput_CalculatesCorrelation() {
         DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, 2},
