@@ -60,6 +60,114 @@ class CorrelationsTest {
     }
 
     @Test
+    void partial_ReturnsSharedPartialCalculator() {
+        CorrelationCalculator calculator = Correlations.partial();
+
+        assertInstanceOf(PartialCorrelationCalculator.class, calculator);
+        assertSame(calculator, Correlations.partial());
+    }
+
+    @Test
+    void of_PartialType_ReturnsSameInstanceAsPartialFactory() {
+        assertSame(Correlations.partial(), Correlations.of(CorrelationType.PARTIAL));
+    }
+
+    @Test
+    void partial_StandardProfile_ReturnsSameInstanceAsDefaultFactory() {
+        assertSame(Correlations.partial(), Correlations.partial(Profile.STANDARD));
+    }
+
+    @Test
+    void partial_SameProfileTwice_ReturnsSharedInstance() {
+        for (Profile profile : Profile.values()) {
+            assertSame(Correlations.partial(profile), Correlations.partial(profile));
+        }
+    }
+
+    @Test
+    void partial_NullProfile_ThrowsInvalidInput() {
+        assertThrows(InvalidInputException.class, () -> Correlations.partial(null));
+    }
+
+    @Test
+    void of_PartialTypeWithProfile_ReturnsSameInstanceAsProfiledPartialFactory() {
+        assertSame(Correlations.partial(Profile.HIGH_PERFORMANCE),
+                Correlations.of(CorrelationType.PARTIAL, Profile.HIGH_PERFORMANCE));
+    }
+
+    @Test
+    void spearman_ReturnsSharedSpearmanCalculator() {
+        CorrelationCalculator calculator = Correlations.spearman();
+
+        assertInstanceOf(SpearmanCorrelationCalculator.class, calculator);
+        assertSame(calculator, Correlations.spearman());
+    }
+
+    @Test
+    void of_SpearmanType_ReturnsSameInstanceAsSpearmanFactory() {
+        assertSame(Correlations.spearman(), Correlations.of(CorrelationType.SPEARMAN));
+    }
+
+    @Test
+    void spearman_StandardProfile_ReturnsSameInstanceAsDefaultFactory() {
+        assertSame(Correlations.spearman(), Correlations.spearman(Profile.STANDARD));
+    }
+
+    @Test
+    void spearman_SameProfileTwice_ReturnsSharedInstance() {
+        for (Profile profile : Profile.values()) {
+            assertSame(Correlations.spearman(profile), Correlations.spearman(profile));
+        }
+    }
+
+    @Test
+    void spearman_NullProfile_ThrowsInvalidInput() {
+        assertThrows(InvalidInputException.class, () -> Correlations.spearman(null));
+    }
+
+    @Test
+    void of_SpearmanTypeWithProfile_ReturnsSameInstanceAsProfiledSpearmanFactory() {
+        assertSame(Correlations.spearman(Profile.HIGH_PERFORMANCE),
+                Correlations.of(CorrelationType.SPEARMAN, Profile.HIGH_PERFORMANCE));
+    }
+
+    @Test
+    void kendall_ReturnsSharedKendallCalculator() {
+        CorrelationCalculator calculator = Correlations.kendall();
+
+        assertInstanceOf(KendallCorrelationCalculator.class, calculator);
+        assertSame(calculator, Correlations.kendall());
+    }
+
+    @Test
+    void of_KendallType_ReturnsSameInstanceAsKendallFactory() {
+        assertSame(Correlations.kendall(), Correlations.of(CorrelationType.KENDALL));
+    }
+
+    @Test
+    void kendall_StandardProfile_ReturnsSameInstanceAsDefaultFactory() {
+        assertSame(Correlations.kendall(), Correlations.kendall(Profile.STANDARD));
+    }
+
+    @Test
+    void kendall_SameProfileTwice_ReturnsSharedInstance() {
+        for (Profile profile : Profile.values()) {
+            assertSame(Correlations.kendall(profile), Correlations.kendall(profile));
+        }
+    }
+
+    @Test
+    void kendall_NullProfile_ThrowsInvalidInput() {
+        assertThrows(InvalidInputException.class, () -> Correlations.kendall(null));
+    }
+
+    @Test
+    void of_KendallTypeWithProfile_ReturnsSameInstanceAsProfiledKendallFactory() {
+        assertSame(Correlations.kendall(Profile.HIGH_PERFORMANCE),
+                Correlations.of(CorrelationType.KENDALL, Profile.HIGH_PERFORMANCE));
+    }
+
+    @Test
     void pearson_SimpleInput_CalculatesCorrelation() {
         DoubleMatrix input = DoubleMatrix.fromRows(new double[][]{
                 {1, 2},

@@ -24,6 +24,23 @@ CAPTIONS = {"release": "Release", "snapshot": "Development snapshot"}
 
 PROFILE_ORDER = ["STANDARD", "HIGH_PERFORMANCE", "VECTORIZED"]
 
+# correlation types, keyed by the benchmark-method prefix they emit
+# (pearsonDouble, partialDouble, spearmanDouble, ...)
+TYPE_ORDER = ["pearson", "partial", "spearman", "kendall"]
+TYPE_LABELS = {"pearson": "Pearson", "partial": "Partial", "spearman": "Spearman",
+               "kendall": "Kendall"}
+
+
+def type_of(entry):
+    method = entry["benchmark"].rsplit(".", 1)[-1]  # e.g. "partialDouble"
+    for type_key in TYPE_ORDER:
+        if method.startswith(type_key):
+            return type_key
+    for suffix in ("Double", "Float"):
+        if method.endswith(suffix):
+            return method[: -len(suffix)]
+    return method
+
 
 def find(entries, method, size):
     for entry in entries:
@@ -72,27 +89,32 @@ def render(entries, section, version, commit, runner):
         "(± 99.9% confidence interval) and heap allocated per calculation "
         "in **MB/op** (`gc.alloc.rate.norm`); lower is better.",
     ]
-    profiles = sorted({profile_of(e) for e in entries},
-                      key=lambda x: (PROFILE_ORDER.index(x) if x in PROFILE_ORDER else 99, x))
-    for profile in profiles:
-        subset = [e for e in entries if profile_of(e) == profile]
-        suffix = " (default)" if profile == "STANDARD" else ""
-        lines += ["", f"**`{profile}`**{suffix}", "",
-                  "| rows × cols | double | float | double alloc | float alloc |",
-                  "|---|---|---|---|---|"]
-        sizes = sorted(
-            {entry["params"]["size"] for entry in subset},
-            key=lambda s: int(s.split("x")[0]) * int(s.split("x")[1]) ** 2,
-        )
-        for size in sizes:
-            rows, cols = size.split("x")
-            d = find(subset, ".pearsonDouble", size)
-            f = find(subset, ".pearsonFloat", size)
-            lines.append(
-                f"| {int(rows):,} × {int(cols):,} "
-                f"| {time_cell(d)} | {time_cell(f)} "
-                f"| {alloc_cell(d)} | {alloc_cell(f)} |"
+    types = sorted({type_of(e) for e in entries},
+                   key=lambda t: (TYPE_ORDER.index(t) if t in TYPE_ORDER else 99, t))
+    for type_key in types:
+        type_entries = [e for e in entries if type_of(e) == type_key]
+        lines += ["", f"#### {TYPE_LABELS.get(type_key, type_key.title())} correlation"]
+        profiles = sorted({profile_of(e) for e in type_entries},
+                          key=lambda x: (PROFILE_ORDER.index(x) if x in PROFILE_ORDER else 99, x))
+        for profile in profiles:
+            subset = [e for e in type_entries if profile_of(e) == profile]
+            suffix = " (default)" if profile == "STANDARD" else ""
+            lines += ["", f"**`{profile}`**{suffix}", "",
+                      "| rows × cols | double | float | double alloc | float alloc |",
+                      "|---|---|---|---|---|"]
+            sizes = sorted(
+                {entry["params"]["size"] for entry in subset},
+                key=lambda s: int(s.split("x")[0]) * int(s.split("x")[1]) ** 2,
             )
+            for size in sizes:
+                rows, cols = size.split("x")
+                d = find(subset, f".{type_key}Double", size)
+                f = find(subset, f".{type_key}Float", size)
+                lines.append(
+                    f"| {int(rows):,} × {int(cols):,} "
+                    f"| {time_cell(d)} | {time_cell(f)} "
+                    f"| {alloc_cell(d)} | {alloc_cell(f)} |"
+                )
     return "\n".join(lines)
 
 
