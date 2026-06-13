@@ -16,6 +16,8 @@ class TiledDoubleKernels extends DoubleKernels {
     }
 
     @Override
+    // the grouped 4x4 accumulator declarations deliberately mirror the register-block tile layout
+    @SuppressWarnings("java:S1659")
     public void dotTile(double[] data, int n, int colI0, int countI, int colJ0, int countJ, double[] dots) {
         if (countI != 4 || countJ != 4) {
             // edge tiles fall back to plain pairwise dots

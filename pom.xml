@@ -24,6 +24,13 @@
         <sonar.organization>tarvyn-analytics</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.projectKey>tarvyn-analytics_corrcalc-lib</sonar.projectKey>
+        <!-- S5778 expects a single throwing call in a lambda; it does not fit
+             JUnit assertThrows, where the calculator/preparer setup call (which
+             cannot throw the asserted exception) legitimately precedes the
+             throwing one. Exclude it from test sources only. -->
+        <sonar.issue.ignore.multicriteria>e1</sonar.issue.ignore.multicriteria>
+        <sonar.issue.ignore.multicriteria.e1.ruleKey>java:S5778</sonar.issue.ignore.multicriteria.e1.ruleKey>
+        <sonar.issue.ignore.multicriteria.e1.resourceKey>**/*Test.java</sonar.issue.ignore.multicriteria.e1.resourceKey>
     </properties>
 
     <distributionManagement>

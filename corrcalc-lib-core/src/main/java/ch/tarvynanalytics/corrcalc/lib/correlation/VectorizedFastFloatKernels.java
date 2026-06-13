@@ -31,10 +31,12 @@ final class VectorizedFastFloatKernels extends TiledFloatKernels {
     private static final int CHUNK_ROWS = 1024;
 
     @Override
+    // the grouped 4x4 accumulator declarations deliberately mirror the register-block tile layout
+    @SuppressWarnings("java:S1659")
     public void dotTile(float[] data, int n, int colI0, int countI, int colJ0, int countJ, double[] dots) {
         if (countI != 4 || countJ != 4) {
-            // edge tiles fall back to plain pairwise dots (double accumulation;
-            // the precision difference is below the float result rounding)
+            // edge tiles fall back to plain pairwise dots with double accumulation,
+            // whose precision difference stays below the float result rounding
             super.dotTile(data, n, colI0, countI, colJ0, countJ, dots);
             return;
         }

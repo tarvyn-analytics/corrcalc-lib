@@ -41,6 +41,9 @@ final class SymmetricPositiveDefiniteInverse {
      *         non-PD: they propagate into the result, so the caller can tell an
      *         undefined input apart from a genuinely singular one.
      */
+    // null is the documented "not positive definite" sentinel, distinct from a
+    // valid (possibly NaN-bearing) inverse; the sole caller handles it explicitly
+    @SuppressWarnings("java:S1168")
     static double[] invert(double[] matrix, int p) {
         double[] l = choleskyLower(matrix, p);
         if (l == null) {
@@ -55,6 +58,7 @@ final class SymmetricPositiveDefiniteInverse {
      * {@code matrix = L * L^T}, stored column-major. Returns {@code null} on the
      * first non-positive pivot.
      */
+    @SuppressWarnings("java:S1168") // null signals a non-positive pivot to invert()
     private static double[] choleskyLower(double[] matrix, int p) {
         double[] l = new double[p * p];
         for (int j = 0; j < p; j++) {

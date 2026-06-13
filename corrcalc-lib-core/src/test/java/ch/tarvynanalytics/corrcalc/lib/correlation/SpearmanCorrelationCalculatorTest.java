@@ -172,10 +172,10 @@ class SpearmanCorrelationCalculatorTest {
 
         DoubleMatrix actual = calculator(profile).calculateToDouble(floatInput);
 
-        // ranks are identical whether read from the float or the double copy
-        // (the data is distinct after rounding), so the double oracle applies;
-        // the tolerance allows for Pearson's float normalized working buffer
-        // (same 5e-8 quantization budget as the Pearson calculateToDouble test)
+        // ranks are identical whether read from the float or the double copy, so
+        // the double oracle applies, with the tolerance covering Pearson's float
+        // normalized working buffer -- the same 5e-8 quantization budget as in
+        // the Pearson calculateToDouble test
         assertMatchesReference(doubleCopyOf(floatInput), actual, 5e-8);
     }
 
