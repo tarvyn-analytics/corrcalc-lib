@@ -21,15 +21,16 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Set up JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 25
           cache: maven
 
       # -Ppublish builds the source and javadoc jars too, so a PR cannot
       # merge with javadoc errors that would break publishing on push.
+      # The reactor builds bench/ as well — the benchmark bit-rot guard.
       - name: Build, test and enforce coverage
         run: ./mvnw --batch-mode -Ppublish clean verify
 
@@ -38,5 +39,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: jacoco-report
-          path: target/site/jacoco/
+          path: corrcalc-lib-core/target/site/jacoco/
           retention-days: 14

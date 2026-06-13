@@ -8,7 +8,7 @@ env:
   MAVEN_OPTS: -Djava.security.egd=file:/dev/./urandom
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
@@ -25,11 +25,11 @@ jobs:
 
       # setup-java writes a settings.xml whose server id "github" matches
       # distributionManagement in pom.xml, authenticating with GITHUB_TOKEN.
-      - name: Set up JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 25
           cache: maven
 
       # develop publishes the SNAPSHOT as-is; main strips the suffix and
@@ -40,14 +40,24 @@ jobs:
         if: github.ref_name == 'main'
         run: ./mvnw --batch-mode versions:set -DremoveSnapshot -DgenerateBackupPoms=false
 
+      # Deploys corrcalc-lib-parent (consumers resolve it as corrcalc-lib-core's
+      # parent pom) and corrcalc-lib-core; bench sets maven.deploy.skip.
       - name: Build, test, enforce coverage and publish to GitHub Packages
         run: ./mvnw --batch-mode -Ppublish clean deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Tag release
+        if: github.ref_name == 'main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(./mvnw --quiet help:evaluate -Dexpression=project.version -DforceStdout)
+          gh api "repos/${GITHUB_REPOSITORY}/git/refs" -f ref="refs/tags/v${VERSION}" -f sha="${GITHUB_SHA}"
+
       - name: Upload library jar
         uses: actions/upload-artifact@v7
         with:
-          name: corrcalc-lib
-          path: target/corrcalc-lib-*.jar
+          name: corrcalc-lib-core
+          path: corrcalc-lib-core/target/corrcalc-lib-core-*.jar
           retention-days: 30
