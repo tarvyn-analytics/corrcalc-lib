@@ -35,6 +35,25 @@
             <artifactId>jmh-core</artifactId>
             <version>${jmh.version}</version>
         </dependency>
+        <!-- Pure-Java rivals for the competitive benchmark only. Bench scope;
+             none of these ever reach the published zero-dependency library.
+             Commons Math is the conventional baseline; EJML and ojAlgo are the
+             performance-oriented pure-Java matrix libraries. -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>3.6.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.ejml</groupId>
+            <artifactId>ejml-all</artifactId>
+            <version>0.43.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.ojalgo</groupId>
+            <artifactId>ojalgo</artifactId>
+            <version>53.3.0</version>
+        </dependency>
     </dependencies>
 
     <build>
