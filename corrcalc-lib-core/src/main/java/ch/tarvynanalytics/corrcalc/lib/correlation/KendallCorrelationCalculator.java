@@ -104,26 +104,28 @@ final class KendallCorrelationCalculator implements CorrelationCalculator {
             throw new InvalidInputException(
                     "At least one observation row and one variable column are required, got [" + n + "x" + p + "]");
         }
-        long n0 = (long) n * (n - 1) / 2;
         boolean parallel = (long) n * p * p >= PARALLEL_THRESHOLD;
         columns(p, parallel).forEach(j -> {
             corr.set(j * p + j, 1.0);
             int[] order = new int[n];
             int[] scratch = new int[n];
             for (int i = 0; i < j; i++) {
-                double tau = tauB(n, n0, tieSum[i], tieSum[j], cmp, i, j, order, scratch);
+                double tau = tauB(n, tieSum, cmp, i, j, order, scratch);
                 corr.set(j * p + i, tau);
                 corr.set(i * p + j, tau);
             }
         });
     }
 
-    private static double tauB(int n, long n0, long tieX, long tieY, ColumnComparator cmp,
+    private static double tauB(int n, long[] tieSum, ColumnComparator cmp,
                                int colX, int colY, int[] order, int[] scratch) {
         for (int k = 0; k < n; k++) {
             order[k] = k;
         }
         mergeSortLex(order, scratch, 0, n, cmp, colX, colY);
+        long n0 = (long) n * (n - 1) / 2;
+        long tieX = tieSum[colX];
+        long tieY = tieSum[colY];
         long jointTies = jointTieSum(order, n, cmp, colX, colY);
         long discordant = mergeCountInversions(order, scratch, 0, n, cmp, colY);
         long concordantMinusDiscordant = n0 - tieX - tieY + jointTies - 2 * discordant;
@@ -142,7 +144,7 @@ final class KendallCorrelationCalculator implements CorrelationCalculator {
                     && cmp.compare(colY, order[j + 1], order[i]) == 0) {
                 j++;
             }
-            long t = j - i + 1;
+            long t = (long) j - i + 1;
             sum += t * (t - 1) / 2;
             i = j + 1;
         }
@@ -228,7 +230,7 @@ final class KendallCorrelationCalculator implements CorrelationCalculator {
                 while (j + 1 < n && Double.compare(column[j + 1], column[i]) == 0) {
                     j++;
                 }
-                long t = j - i + 1;
+                long t = (long) j - i + 1;
                 sum += t * (t - 1) / 2;
                 i = j + 1;
             }
@@ -251,7 +253,7 @@ final class KendallCorrelationCalculator implements CorrelationCalculator {
                 while (j + 1 < n && Float.compare(column[j + 1], column[i]) == 0) {
                     j++;
                 }
-                long t = j - i + 1;
+                long t = (long) j - i + 1;
                 sum += t * (t - 1) / 2;
                 i = j + 1;
             }

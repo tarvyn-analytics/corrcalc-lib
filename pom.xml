@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>ch.tarvynanalytics.corrcalc</groupId>
     <artifactId>corrcalc-lib-parent</artifactId>
-    <version>1.2.0-SNAPSHOT</version>
+    <version>1.2.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>corrcalc lib parent</name>
     <description>Aggregator and parent for the corrcalc library and its benchmarks.
@@ -20,6 +20,17 @@
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>5.12.2</junit.version>
+        <!-- SonarCloud analysis (same organization as the corrcalc-core repo) -->
+        <sonar.organization>tarvyn-analytics</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.projectKey>tarvyn-analytics_corrcalc-lib</sonar.projectKey>
+        <!-- S5778 expects a single throwing call in a lambda; it does not fit
+             JUnit assertThrows, where the calculator/preparer setup call (which
+             cannot throw the asserted exception) legitimately precedes the
+             throwing one. Exclude it from test sources only. -->
+        <sonar.issue.ignore.multicriteria>e1</sonar.issue.ignore.multicriteria>
+        <sonar.issue.ignore.multicriteria.e1.ruleKey>java:S5778</sonar.issue.ignore.multicriteria.e1.ruleKey>
+        <sonar.issue.ignore.multicriteria.e1.resourceKey>**/*Test.java</sonar.issue.ignore.multicriteria.e1.resourceKey>
     </properties>
 
     <distributionManagement>
@@ -67,6 +78,13 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>5.1.0.4751</version>
+            </plugin>
+        </plugins>
     </build>
 
 </project>

@@ -5,7 +5,7 @@
     <parent>
         <groupId>ch.tarvynanalytics.corrcalc</groupId>
         <artifactId>corrcalc-lib-parent</artifactId>
-        <version>1.2.0-SNAPSHOT</version>
+        <version>1.2.1-SNAPSHOT</version>
     </parent>
     <artifactId>corrcalc-lib-bench</artifactId>
     <packaging>jar</packaging>
@@ -20,6 +20,8 @@
         <maven.deploy.skip>true</maven.deploy.skip>
         <!-- no tests here, ever — keeps root-level `mvnw test -Dtest=X` working -->
         <maven.test.skip>true</maven.test.skip>
+        <!-- internal tooling, not part of the published library: skip Sonar -->
+        <sonar.skip>true</sonar.skip>
     </properties>
 
     <dependencies>
