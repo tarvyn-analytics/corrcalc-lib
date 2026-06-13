@@ -20,6 +20,10 @@
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>5.12.2</junit.version>
+        <!-- SonarCloud analysis (same organization as the corrcalc-core repo) -->
+        <sonar.organization>tarvyn-analytics</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.projectKey>tarvyn-analytics_corrcalc-lib</sonar.projectKey>
     </properties>
 
     <distributionManagement>
@@ -67,6 +71,13 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>5.1.0.4751</version>
+            </plugin>
+        </plugins>
     </build>
 
 </project>

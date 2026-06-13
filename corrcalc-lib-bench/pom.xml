@@ -20,6 +20,8 @@
         <maven.deploy.skip>true</maven.deploy.skip>
         <!-- no tests here, ever — keeps root-level `mvnw test -Dtest=X` working -->
         <maven.test.skip>true</maven.test.skip>
+        <!-- internal tooling, not part of the published library: skip Sonar -->
+        <sonar.skip>true</sonar.skip>
     </properties>
 
     <dependencies>

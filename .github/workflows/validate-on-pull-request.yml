@@ -28,11 +28,28 @@ jobs:
           java-version: 25
           cache: maven
 
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
       # -Ppublish builds the source and javadoc jars too, so a PR cannot
       # merge with javadoc errors that would break publishing on push.
       # The reactor builds bench/ as well — the benchmark bit-rot guard.
-      - name: Build, test and enforce coverage
-        run: ./mvnw --batch-mode -Ppublish clean verify
+      # sonar:sonar runs after verify so the JaCoCo XML report is in place;
+      # SonarCloud org/host/projectKey come from the parent pom.
+      - name: Build, test, enforce coverage and analyze with SonarCloud
+        run: >
+          ./mvnw --batch-mode -Ppublish clean verify sonar:sonar
+          -Dsonar.working.directory=.scannerwork
+          -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
+          -Dsonar.pullrequest.branch=${{ github.head_ref }}
+          -Dsonar.pullrequest.base=${{ github.base_ref }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload coverage report
         if: always()
@@ -41,3 +58,11 @@ jobs:
           name: jacoco-report
           path: corrcalc-lib-core/target/site/jacoco/
           retention-days: 14
+
+      - name: SonarCloud Quality Gate Check
+        uses: sonarsource/sonarqube-quality-gate-action@master
+        timeout-minutes: 5
+        with:
+          projectBaseDir: .
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
