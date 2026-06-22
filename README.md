@@ -48,6 +48,27 @@ DoubleMatrix spearman = Correlations.spearman().calculate(prepared);
 DoubleMatrix kendall = Correlations.kendall().calculate(prepared);
 ```
 
+For a **live stream** of incoming bars (one return per variable per tick), the
+`stream` package maintains the rolling-window Pearson matrix incrementally and
+emits a snapshot on a cadence — instead of recomputing the whole matrix each time:
+
+```java
+import ch.tarvynanalytics.corrcalc.lib.stream.RollingCorrelations;
+import ch.tarvynanalytics.corrcalc.lib.stream.RollingCorrelationEngine;
+
+String[] labels = {"BTC", "ETH", "SOL"};
+RollingCorrelationEngine engine = RollingCorrelations.pearson(labels, /*window=*/480,
+        (seq, asOf, pearson, lbls) -> publish(asOf, pearson));   // snapshot listener
+
+engine.onBar(timestamp, new double[]{btcRet, ethRet, solRet});   // O(1) per pair rank-one slide
+engine.onSessionBoundary();   // calendar-agnostic: reset the window at a session gap
+```
+
+The engine is stateful and single-writer (one engine per symbol basket and one
+sampling frequency); the running sums always accumulate in `double`, even on the
+`float[]` ingest path. See the `stream` package javadoc for the snapshot-now /
+delta-ready listener contract and the NaN rules for zero-variance windows.
+
 ## Package structure
 
 ```
@@ -56,6 +77,7 @@ ch.tarvynanalytics.corrcalc.lib/
 ├── correlation/  # CorrelationCalculator, CorrelationType (Pearson, partial, Spearman, Kendall), Correlations factory
 ├── prep/         # DataPreparer steps: dropMissingRows, imputeMean, center, standardize
 ├── io/           # MatrixReader, CsvMatrixReader (whitespace-separated values)
+├── stream/       # RollingCorrelationEngine — incremental rolling-window Pearson over a live bar stream
 └── exception/    # CorrCalcException, InvalidInputException
 ```
 
