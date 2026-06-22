@@ -21,7 +21,9 @@ import java.util.Arrays;
  * <p>
  * Layout: per-variable sums {@code sx[i]}, {@code sxx[i]} (N of each); the
  * pairwise {@code sxy} is stored once per unordered pair {@code (i, j), i < j}
- * in a flat upper-triangular array, indexed by {@link #pairIndex}. The window
+ * in a flat upper-triangular array (length {@link #pairCount(int)}), addressed
+ * by a running pair counter that walks the pairs in the same {@code i < j}
+ * order on every update and on snapshot assembly. The window
  * buffer is a circular {@code double[window * n]} of the last (up to)
  * {@code window} bars, column-major within each slot (variable-major), so the
  * oldest bar can be read back for the rank-one "remove" half of the slide.

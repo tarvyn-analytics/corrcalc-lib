@@ -8,8 +8,10 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -157,7 +159,7 @@ class RollingPearsonEngineOracleATest {
         // argument in the spec is that error does not grow with stream
         // length, so checkpoints spread across the stream are sufficient.
         int[] checkpoints = {window - 1, 100_000, 500_000, 1_000_000, 1_500_000, bars - 1};
-        java.util.Set<Integer> checkpointSet = new java.util.HashSet<>();
+        Set<Integer> checkpointSet = new HashSet<>();
         for (int c : checkpoints) {
             checkpointSet.add(c);
         }
