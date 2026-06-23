@@ -69,6 +69,28 @@ sampling frequency); the running sums always accumulate in `double`, even on the
 `float[]` ingest path. See the `stream` package javadoc for the snapshot-now /
 delta-ready listener contract and the NaN rules for zero-variance windows.
 
+**Input contract (read this before feeding it data).** The engine is built for
+**returns**, and its accuracy guarantee holds only inside that domain:
+
+- **Feed returns, not levels.** Each value must be a per-bar **return** (e.g.
+  `log(close / prevClose)`), i.e. a series fluctuating around ≈0. The rolling
+  variance uses the running-sums form `Σx² − W·mean²`; that subtraction is exact
+  when the mean is small relative to the spread, but loses precision the further
+  the mean sits from zero. Concretely the relative error per coefficient is
+  ≈ `eps · (1 + (mean/std)²)`: negligible for returns, but it degrades visibly if
+  you feed **price levels** or a near-constant series pinned on a large offset.
+  (This trade is deliberate — the uncentered form is what makes the update `O(1)`
+  per pair; clean your data into returns first, as you would for the batch API.)
+- **One timescale per engine.** Every `onBar` must carry returns at the *same*
+  sampling frequency; never mix daily and intraday into one engine. Combine
+  timescales downstream by blending two engines' matrices, not by interleaving bars.
+- **Finite inputs only.** No `NaN`/`Infinity` in a bar (use the `prep` package to
+  clean raw data first). A variable that is **constant over the window** has zero
+  variance, so its whole row/column — diagonal included — is reported as `NaN`.
+- **Window ≥ 2**, and `returns.length` must equal the variable count every bar.
+- **Not thread-safe.** A single engine instance is single-writer; drive it from
+  one ingest thread.
+
 ## Package structure
 
 ```
@@ -457,12 +479,39 @@ are orders of magnitude so the ranking is unambiguous, but treat the absolute
 values as indicative. The rival libraries are **bench-scope dependencies only**;
 the published library stays zero-dependency.
 
+### Streaming engine
+
+The `stream` package ingests **one bar at a time** rather than a whole matrix, so its
+benchmark unit is a single `onBar` call. Measured on the reference machine (Intel Core
+i7-6820HQ, 8 threads, Windows host, JDK 25.0.1, 2026-06-23): **throughput in bars/second**
+(higher is better) and **heap allocated per bar** (`gc.alloc.rate.norm`), window `W = 480`:
+
+| variables `N` | incremental slide | slide + snapshot every bar | naive: recompute matrix every bar | slide vs. recompute |
+|---|---|---|---|---|
+| 16  | 2,910,000 bars/s · **0 B** | 736,000 bars/s · 2 KB  | 17,400 bars/s | **≈167×** |
+| 50  | 475,000 bars/s · **0 B**   | 99,000 bars/s · 20 KB  | 3,790 bars/s  | **≈125×** |
+| 100 | 140,000 bars/s · **0 B**   | 27,500 bars/s · 80 KB  | 1,570 bars/s  | **≈89×**  |
+
+- **The incremental slide is allocation-free and independent of the window width `W`.** The
+  rank-one update touches each of the `N(N−1)/2` pairs once, so it is `O(N²)` and does *not* depend
+  on `W`: at `N = 16` it runs ~2.9M bars/s whether `W = 120` or `W = 480`. Recomputing the matrix
+  each bar is `O(W·N²)`, so it costs far more *and grows with `W`* (`N = 16`: 60k bars/s at
+  `W = 120` → 17k at `W = 480`). That gap — **≈90–170× at `W = 480`** — is the whole point of an
+  online engine: you pay `O(N²)` per bar instead of `O(W·N²)`.
+- **The snapshot is the only allocation.** Emitting the full `N×N` matrix every bar allocates
+  exactly `N²·8` bytes (2 KB at `N = 16`, 80 KB at `N = 100`); the slide itself allocates nothing.
+  For wide, high-rate streams, raise `emitEveryNUpdates` so snapshots are emitted on a coarser
+  cadence than every bar.
+- **Single core.** The engine is single-writer, so these are single-thread numbers; at hundreds of
+  variables the `O(N²)` slide is the cap, which the deferred profile-gated SIMD path will address.
+
 ### Running them yourself
 
 ```bash
 ./mvnw -DskipTests clean package
 java -jar corrcalc-lib-bench/target/benchmarks.jar -p profile=STANDARD,HIGH_PERFORMANCE,VECTORIZED   # all profiles, ~40 min
 java -jar corrcalc-lib-bench/target/benchmarks.jar -p size=10000x100 -f 1 -wi 2 -i 3   # quick check (default profile)
+java -jar corrcalc-lib-bench/target/benchmarks.jar RollingCorrelationBenchmark -prof gc   # streaming engine: bars/s + bytes/bar
 ```
 
 If you develop inside WSL, build there but run the jar on the Windows host
