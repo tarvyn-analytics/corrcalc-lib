@@ -28,6 +28,24 @@ import java.time.Instant;
  * 1-minute); the engine never concatenates or mixes timescales. Combining a
  * macro and a micro view is done downstream by blending the two engines'
  * matrix snapshots, never inside one engine.
+ * <p>
+ * <b>Input contract — feed returns, not levels.</b> Each value in a bar must be a
+ * per-bar <b>return</b> (for example {@code log(close / prevClose)}), i.e. a series
+ * fluctuating around approximately zero, and must be <b>finite</b> (no {@code NaN}
+ * or {@code Infinity} — clean raw data with the {@code prep} package first, exactly
+ * as for the batch {@code CorrelationCalculator}). The rolling variance is computed
+ * from running sums as {@code Sxx − W·mean²}; that subtraction is numerically exact
+ * while the mean is small relative to the spread, but loses precision as the mean
+ * moves away from zero — the relative error per coefficient is on the order of
+ * {@code eps · (1 + (mean/std)²)}. It is therefore accurate to ~1e-13 for returns,
+ * but <b>degrades for inputs with a large mean-to-spread ratio</b>, such as raw
+ * price levels or a near-constant series pinned on a large offset. This uncentered
+ * form is a deliberate trade: it is what makes the per-bar update {@code O(1)} per
+ * pair and keeps the result bit-for-bit consistent with the batch Pearson over the
+ * same window. A variable that is <b>constant over the window</b> has zero variance,
+ * so its entire row and column — including the diagonal — are reported as
+ * {@code NaN}. The window must be {@code >= 2}, and every bar's length must equal
+ * the variable count.
  */
 public interface RollingCorrelationEngine {
 
