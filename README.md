@@ -20,7 +20,7 @@ As a dependency (published to GitHub Packages, private — resolve via a PAT wit
 
 ```xml
 <dependency>
-    <groupId>ch.tarvynanalytics.corrcalc.lib</groupId>
+    <groupId>ch.tarvynanalytics.corrcalc</groupId>
     <artifactId>corrcalc-lib-core</artifactId>
     <version>1.2.1</version>
 </dependency>
