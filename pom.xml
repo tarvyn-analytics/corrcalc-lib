@@ -11,6 +11,14 @@
         This pom is published to GitHub Packages too: the corrcalc-lib-core pom
         references it as parent, so consumers must be able to resolve it.</description>
 
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
     <modules>
         <module>corrcalc-lib-core</module>
         <module>corrcalc-lib-bench</module>
