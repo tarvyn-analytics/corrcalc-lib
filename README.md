@@ -1,8 +1,10 @@
 # CorrCalc Lib
 
-> Research program frozen 2026-07; this library is complete and maintained as-is. Entry point: [corrcalc-graphs-meta](https://github.com/tarvyn-analytics/corrcalc-graphs-meta).
+> Feature-complete and stable; maintained as-is.
 
-A pure Java library for calculating correlation matrices from numerical datasets.
+An all-purpose correlation calculator for the JVM: a pure Java library that
+computes correlation matrices from any numerical dataset — Pearson, partial,
+Spearman and Kendall, in batch or incrementally over a live data stream.
 Zero runtime dependencies, built for speed and low memory overhead.
 
 **Tech stack:** Java 21+ at runtime (the optional `VECTORIZED` profile needs
@@ -15,14 +17,15 @@ enforced by the build).
 ./mvnw clean verify     # build, run all tests, enforce coverage
 ```
 
-As a dependency (published to GitHub Packages, private — resolve via a PAT with
-`read:packages`, or `./mvnw -DskipTests install` from this checkout):
+As a dependency (published to GitHub Packages, which needs a GitHub token with
+`read:packages` to resolve — or run `./mvnw -DskipTests install` from this
+checkout):
 
 ```xml
 <dependency>
     <groupId>ch.tarvynanalytics.corrcalc</groupId>
     <artifactId>corrcalc-lib-core</artifactId>
-    <version>1.2.1</version>
+    <version>1.2.2</version>
 </dependency>
 ```
 
@@ -61,9 +64,10 @@ DoubleMatrix spearman = Correlations.spearman().calculate(prepared);
 DoubleMatrix kendall = Correlations.kendall().calculate(prepared);
 ```
 
-For a **live stream** of incoming bars (one return per variable per tick), the
-`stream` package maintains the rolling-window Pearson matrix incrementally and
-emits a snapshot on a cadence — instead of recomputing the whole matrix each time:
+For a **live stream** of observations (one value per variable per tick — market
+bars, sensor readings, any rolling feed), the `stream` package maintains the
+rolling-window Pearson matrix incrementally and emits a snapshot on a cadence —
+instead of recomputing the whole matrix each time:
 
 ```java
 import ch.tarvynanalytics.corrcalc.lib.stream.RollingCorrelations;
@@ -83,20 +87,23 @@ sampling frequency); the running sums always accumulate in `double`, even on the
 delta-ready listener contract and the NaN rules for zero-variance windows.
 
 **Input contract (read this before feeding it data).** The engine is built for
-**returns**, and its accuracy guarantee holds only inside that domain:
+**near-zero-mean series** — financial returns are the canonical example — and
+its accuracy guarantee holds only inside that domain:
 
-- **Feed returns, not levels.** Each value must be a per-bar **return** (e.g.
-  `log(close / prevClose)`), i.e. a series fluctuating around ≈0. The rolling
+- **Feed changes, not levels.** Each value must be a per-tick **change** (for
+  prices, a return such as `log(close / prevClose)`; for other series, a
+  difference or a deviation from baseline), i.e. a series fluctuating around ≈0. The rolling
   variance uses the running-sums form `Σx² − W·mean²`; that subtraction is exact
   when the mean is small relative to the spread, but loses precision the further
   the mean sits from zero. Concretely the relative error per coefficient is
-  ≈ `eps · (1 + (mean/std)²)`: negligible for returns, but it degrades visibly if
-  you feed **price levels** or a near-constant series pinned on a large offset.
-  (This trade is deliberate — the uncentered form is what makes the update `O(1)`
-  per pair; clean your data into returns first, as you would for the batch API.)
-- **One timescale per engine.** Every `onBar` must carry returns at the *same*
-  sampling frequency; never mix daily and intraday into one engine. Combine
-  timescales downstream by blending two engines' matrices, not by interleaving bars.
+  ≈ `eps · (1 + (mean/std)²)`: negligible for near-zero-mean data, but it degrades
+  visibly if you feed **raw levels** or a near-constant series pinned on a large
+  offset. (This trade is deliberate — the uncentered form is what makes the update
+  `O(1)` per pair; difference your data first, as you would for the batch API.)
+- **One timescale per engine.** Every `onBar` must carry values at the *same*
+  sampling frequency; never mix frequencies (e.g. daily and intraday bars) into one
+  engine. Combine timescales downstream by blending two engines' matrices, not by
+  interleaving ticks.
 - **Finite inputs only.** No `NaN`/`Infinity` in a bar (use the `prep` package to
   clean raw data first). A variable that is **constant over the window** has zero
   variance, so its whole row/column — diagonal included — is reported as `NaN`.
@@ -304,124 +311,31 @@ Release **v1.2.0** (`805b56c`), measured on 2026-06-13 with JDK 25.0.1 on Intel 
 | 100,000 × 100 | 40,753.86 ± 5,516.99 | 42,754.63 ± 3,756.18 | 80.89 | 80.45 |
 <!-- benchmark-release:end -->
 
-### Development snapshot
+### Streaming engine
 
-<!-- benchmark-snapshot:start -->
-Development snapshot **v1.1.1-SNAPSHOT** (`710803a`), measured on 2026-06-13 with JDK 25.0.1 on Intel Core i7-6820HQ (8 threads, Windows host). JMH average time per correlation matrix in **ms/op** (± 99.9% confidence interval) and heap allocated per calculation in **MB/op** (`gc.alloc.rate.norm`); lower is better.
+The `stream` package ingests **one bar at a time** rather than a whole matrix, so its
+benchmark unit is a single `onBar` call. Measured on the reference machine (Intel Core
+i7-6820HQ, 8 threads, Windows host, JDK 25.0.1, 2026-06-23): **throughput in bars/second**
+(higher is better) and **heap allocated per bar** (`gc.alloc.rate.norm`), window `W = 480`:
 
-#### Pearson correlation
-
-**`STANDARD`** (default)
-
-| rows × cols | double | float | double alloc | float alloc |
+| variables `N` | incremental slide | slide + snapshot every bar | naive: recompute matrix every bar | slide vs. recompute |
 |---|---|---|---|---|
-| 1,000 × 10 | 0.06 ± 0.00 | 0.08 ± 0.00 | 0.08 | 0.04 |
-| 10,000 × 100 | 9.18 ± 0.46 | 10.34 ± 0.15 | 8.09 | 4.05 |
-| 100,000 × 100 | 202.04 ± 5.57 | 113.23 ± 4.27 | 80.09 | 40.05 |
-| 10,000 × 1,000 | 1,316.34 ± 109.14 | 1,010.65 ± 76.93 | 88.03 | 44.03 |
+| 16  | 2,910,000 bars/s · **0 B** | 736,000 bars/s · 2 KB  | 17,400 bars/s | **≈167×** |
+| 50  | 475,000 bars/s · **0 B**   | 99,000 bars/s · 20 KB  | 3,790 bars/s  | **≈125×** |
+| 100 | 140,000 bars/s · **0 B**   | 27,500 bars/s · 80 KB  | 1,570 bars/s  | **≈89×**  |
 
-**`HIGH_PERFORMANCE`**
-
-| rows × cols | double | float | double alloc | float alloc |
-|---|---|---|---|---|
-| 1,000 × 10 | 0.06 ± 0.00 | 0.07 ± 0.00 | 0.08 | 0.04 |
-| 10,000 × 100 | 6.48 ± 0.03 | 7.39 ± 0.49 | 8.09 | 4.05 |
-| 100,000 × 100 | 89.30 ± 1.77 | 77.00 ± 3.39 | 80.09 | 40.05 |
-| 10,000 × 1,000 | 507.19 ± 15.89 | 613.94 ± 40.07 | 88.04 | 44.04 |
-
-**`VECTORIZED`**
-
-| rows × cols | double | float | double alloc | float alloc |
-|---|---|---|---|---|
-| 1,000 × 10 | 0.05 ± 0.00 | 0.06 ± 0.00 | 0.08 | 0.04 |
-| 10,000 × 100 | 3.11 ± 0.19 | 1.57 ± 0.04 | 8.09 | 4.05 |
-| 100,000 × 100 | 85.21 ± 1.44 | 37.07 ± 0.54 | 80.09 | 40.05 |
-| 10,000 × 1,000 | 339.14 ± 21.30 | 135.82 ± 4.67 | 88.04 | 44.04 |
-
-#### Partial correlation
-
-**`STANDARD`** (default)
-
-| rows × cols | double | float | double alloc | float alloc |
-|---|---|---|---|---|
-| 1,000 × 10 | 0.06 ± 0.00 | 0.09 ± 0.00 | 0.08 | 0.05 |
-| 10,000 × 100 | 10.17 ± 0.14 | 11.02 ± 0.09 | 8.41 | 4.45 |
-| 100,000 × 100 | 226.12 ± 9.21 | 113.62 ± 4.55 | 80.41 | 40.45 |
-| 10,000 × 1,000 | 2,172.31 ± 128.14 | 1,741.16 ± 190.47 | 120.04 | 84.03 |
-
-**`HIGH_PERFORMANCE`**
-
-| rows × cols | double | float | double alloc | float alloc |
-|---|---|---|---|---|
-| 1,000 × 10 | 0.06 ± 0.00 | 0.08 ± 0.00 | 0.08 | 0.05 |
-| 10,000 × 100 | 7.42 ± 0.52 | 8.02 ± 0.05 | 8.41 | 4.45 |
-| 100,000 × 100 | 98.80 ± 2.91 | 77.52 ± 1.17 | 80.41 | 40.45 |
-| 10,000 × 1,000 | 1,283.42 ± 48.05 | 1,328.12 ± 128.70 | 120.04 | 84.04 |
-
-**`VECTORIZED`**
-
-| rows × cols | double | float | double alloc | float alloc |
-|---|---|---|---|---|
-| 1,000 × 10 | 0.05 ± 0.00 | 0.06 ± 0.00 | 0.08 | 0.05 |
-| 10,000 × 100 | 3.88 ± 0.23 | 2.95 ± 0.05 | 8.41 | 4.45 |
-| 100,000 × 100 | 86.92 ± 3.46 | 37.90 ± 1.36 | 80.41 | 40.45 |
-| 10,000 × 1,000 | 1,066.67 ± 49.52 | 898.43 ± 42.63 | 120.04 | 84.04 |
-
-#### Spearman correlation
-
-**`STANDARD`** (default)
-
-| rows × cols | double | float | double alloc | float alloc |
-|---|---|---|---|---|
-| 1,000 × 10 | 1.08 ± 0.01 | 1.14 ± 0.20 | 0.24 | 0.16 |
-| 10,000 × 100 | 136.02 ± 3.41 | 141.37 ± 13.39 | 24.09 | 16.05 |
-| 100,000 × 100 | 1,897.30 ± 37.82 | 1,738.19 ± 31.36 | 240.10 | 160.06 |
-| 10,000 × 1,000 | 2,570.11 ± 83.42 | 2,305.86 ± 289.68 | 248.09 | 164.09 |
-
-**`HIGH_PERFORMANCE`**
-
-| rows × cols | double | float | double alloc | float alloc |
-|---|---|---|---|---|
-| 1,000 × 10 | 1.07 ± 0.02 | 1.09 ± 0.03 | 0.24 | 0.16 |
-| 10,000 × 100 | 133.25 ± 4.96 | 137.08 ± 4.39 | 24.09 | 16.05 |
-| 100,000 × 100 | 1,787.75 ± 89.38 | 1,698.09 ± 33.43 | 240.10 | 160.06 |
-| 10,000 × 1,000 | 1,814.54 ± 51.60 | 1,827.85 ± 47.23 | 248.10 | 164.10 |
-
-**`VECTORIZED`**
-
-| rows × cols | double | float | double alloc | float alloc |
-|---|---|---|---|---|
-| 1,000 × 10 | 1.07 ± 0.05 | 1.06 ± 0.03 | 0.24 | 0.16 |
-| 10,000 × 100 | 137.44 ± 25.28 | 130.22 ± 5.80 | 24.09 | 16.05 |
-| 100,000 × 100 | 1,771.24 ± 21.39 | 1,666.47 ± 87.11 | 240.10 | 160.06 |
-| 10,000 × 1,000 | 1,597.05 ± 60.30 | 1,370.22 ± 13.65 | 248.10 | 164.10 |
-
-#### Kendall correlation
-
-**`STANDARD`** (default)
-
-| rows × cols | double | float | double alloc | float alloc |
-|---|---|---|---|---|
-| 1,000 × 10 | 3.65 ± 0.16 | 3.49 ± 0.05 | 0.09 | 0.09 |
-| 10,000 × 100 | 3,296.48 ± 822.58 | 3,399.76 ± 283.97 | 8.17 | 8.09 |
-| 100,000 × 100 | 41,070.19 ± 4,582.32 | 43,291.04 ± 3,935.42 | 80.89 | 80.45 |
-
-**`HIGH_PERFORMANCE`**
-
-| rows × cols | double | float | double alloc | float alloc |
-|---|---|---|---|---|
-| 1,000 × 10 | 3.53 ± 0.12 | 3.51 ± 0.05 | 0.09 | 0.09 |
-| 10,000 × 100 | 3,145.95 ± 366.55 | 3,459.77 ± 284.27 | 8.17 | 8.09 |
-| 100,000 × 100 | 41,074.31 ± 6,652.63 | 43,031.59 ± 6,269.54 | 80.89 | 80.45 |
-
-**`VECTORIZED`**
-
-| rows × cols | double | float | double alloc | float alloc |
-|---|---|---|---|---|
-| 1,000 × 10 | 3.53 ± 0.05 | 3.50 ± 0.08 | 0.09 | 0.09 |
-| 10,000 × 100 | 3,064.44 ± 205.23 | 3,406.78 ± 124.68 | 8.17 | 8.09 |
-| 100,000 × 100 | 40,753.86 ± 5,516.99 | 42,754.63 ± 3,756.18 | 80.89 | 80.45 |
-<!-- benchmark-snapshot:end -->
+- **The incremental slide is allocation-free and independent of the window width `W`.** The
+  rank-one update touches each of the `N(N−1)/2` pairs once, so it is `O(N²)` and does *not* depend
+  on `W`: at `N = 16` it runs ~2.9M bars/s whether `W = 120` or `W = 480`. Recomputing the matrix
+  each bar is `O(W·N²)`, so it costs far more *and grows with `W`* (`N = 16`: 60k bars/s at
+  `W = 120` → 17k at `W = 480`). That gap — **≈90–170× at `W = 480`** — is the whole point of an
+  online engine: you pay `O(N²)` per bar instead of `O(W·N²)`.
+- **The snapshot is the only allocation.** Emitting the full `N×N` matrix every bar allocates
+  exactly `N²·8` bytes (2 KB at `N = 16`, 80 KB at `N = 100`); the slide itself allocates nothing.
+  For wide, high-rate streams, raise `emitEveryNUpdates` so snapshots are emitted on a coarser
+  cadence than every bar.
+- **Single core.** The engine is single-writer, so these are single-thread numbers; at hundreds
+  of variables the `O(N²)` slide is the cap.
 
 ### Choosing a profile
 
@@ -492,32 +406,6 @@ are orders of magnitude so the ranking is unambiguous, but treat the absolute
 values as indicative. The rival libraries are **bench-scope dependencies only**;
 the published library stays zero-dependency.
 
-### Streaming engine
-
-The `stream` package ingests **one bar at a time** rather than a whole matrix, so its
-benchmark unit is a single `onBar` call. Measured on the reference machine (Intel Core
-i7-6820HQ, 8 threads, Windows host, JDK 25.0.1, 2026-06-23): **throughput in bars/second**
-(higher is better) and **heap allocated per bar** (`gc.alloc.rate.norm`), window `W = 480`:
-
-| variables `N` | incremental slide | slide + snapshot every bar | naive: recompute matrix every bar | slide vs. recompute |
-|---|---|---|---|---|
-| 16  | 2,910,000 bars/s · **0 B** | 736,000 bars/s · 2 KB  | 17,400 bars/s | **≈167×** |
-| 50  | 475,000 bars/s · **0 B**   | 99,000 bars/s · 20 KB  | 3,790 bars/s  | **≈125×** |
-| 100 | 140,000 bars/s · **0 B**   | 27,500 bars/s · 80 KB  | 1,570 bars/s  | **≈89×**  |
-
-- **The incremental slide is allocation-free and independent of the window width `W`.** The
-  rank-one update touches each of the `N(N−1)/2` pairs once, so it is `O(N²)` and does *not* depend
-  on `W`: at `N = 16` it runs ~2.9M bars/s whether `W = 120` or `W = 480`. Recomputing the matrix
-  each bar is `O(W·N²)`, so it costs far more *and grows with `W`* (`N = 16`: 60k bars/s at
-  `W = 120` → 17k at `W = 480`). That gap — **≈90–170× at `W = 480`** — is the whole point of an
-  online engine: you pay `O(N²)` per bar instead of `O(W·N²)`.
-- **The snapshot is the only allocation.** Emitting the full `N×N` matrix every bar allocates
-  exactly `N²·8` bytes (2 KB at `N = 16`, 80 KB at `N = 100`); the slide itself allocates nothing.
-  For wide, high-rate streams, raise `emitEveryNUpdates` so snapshots are emitted on a coarser
-  cadence than every bar.
-- **Single core.** The engine is single-writer, so these are single-thread numbers; at hundreds of
-  variables the `O(N²)` slide is the cap, which the deferred profile-gated SIMD path will address.
-
 ### Running them yourself
 
 ```bash
@@ -545,3 +433,7 @@ numbers across machines or days are not comparable.
 Step-by-step guides for extending the library (new correlation types, data
 preparation steps, storage types) and the project's invariants and testing
 conventions live in [CLAUDE.md](CLAUDE.md).
+
+## License
+
+Licensed under the [Apache License, Version 2.0](LICENSE).

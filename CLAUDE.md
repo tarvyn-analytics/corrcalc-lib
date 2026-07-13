@@ -1,8 +1,7 @@
 # CLAUDE.md
 
 Guidance for Claude Code when working in this repository. Read `README.md` first — it owns
-the overview, public API, package layout and design rationale. Family conventions and shared
-context: `../../corrcalc-graphs/corrcalc-graphs-meta/README.md`.
+the overview, public API, package layout and design rationale.
 
 ## Commands
 
