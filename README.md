@@ -1,5 +1,7 @@
 # CorrCalc Lib
 
+> Research program frozen 2026-07; this library is complete and maintained as-is. Entry point: [corrcalc-graphs-meta](https://github.com/tarvyn-analytics/corrcalc-graphs-meta).
+
 A pure Java library for calculating correlation matrices from numerical datasets.
 Zero runtime dependencies, built for speed and low memory overhead.
 
@@ -11,6 +13,17 @@ enforced by the build).
 
 ```bash
 ./mvnw clean verify     # build, run all tests, enforce coverage
+```
+
+As a dependency (published to GitHub Packages, private — resolve via a PAT with
+`read:packages`, or `./mvnw -DskipTests install` from this checkout):
+
+```xml
+<dependency>
+    <groupId>ch.tarvynanalytics.corrcalc</groupId>
+    <artifactId>corrcalc-lib-core</artifactId>
+    <version>1.2.1</version>
+</dependency>
 ```
 
 ```java
