@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./mvnw *)",
+      "Bash(java *)",
+      "Bash(javac *)",
+      "Bash(cmd.exe *)",
+      "Bash(powershell.exe *)",
+      "Bash(git *)",
+      "Bash(gh *)",
+      "Bash(curl *)",
+      "Bash(python3 *)",
+      "Bash(.claude/tools/jira/jira.sh *)",
+      "Bash(sed *)",
+      "Bash(grep *)",
+      "Bash(echo *)",
+      "Bash(until *)",
+      "Bash(timeout *)",
+      "Bash(sleep *)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "Bash(rm *)",
+      "Bash(mkdir *)",
+      "Bash(touch *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(diff *)",
+      "Bash(find *)",
+      "Bash(jq *)",
+      "Bash(date *)",
+      "Bash(wslpath *)",
+      "Bash(nproc *)",
+      "Bash(free *)",
+      "Read(//tmp/**)",
+      "Read(//mnt/d/projects/startups/corrcalc/**)",
+      "Skill(update-config)"
+    ]
+  }
+}

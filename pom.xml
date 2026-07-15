@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.github.tarvyn-analytics.corrcalc</groupId>
+    <artifactId>corrcalc-lib-parent</artifactId>
+    <version>1.2.2</version>
+    <packaging>pom</packaging>
+    <name>corrcalc lib parent</name>
+    <description>Aggregator and parent for the corrcalc library and its benchmarks.
+        Published to Maven Central as the parent of corrcalc-lib-core, which
+        references it so consumers can resolve it.</description>
+    <url>https://github.com/tarvyn-analytics/corrcalc-lib</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>tarvyn-analytics</id>
+            <name>Tarvyn Analytics</name>
+            <url>https://github.com/tarvyn-analytics</url>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/tarvyn-analytics/corrcalc-lib.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/tarvyn-analytics/corrcalc-lib.git</developerConnection>
+        <url>https://github.com/tarvyn-analytics/corrcalc-lib</url>
+    </scm>
+
+    <modules>
+        <module>corrcalc-lib-core</module>
+        <module>corrcalc-lib-bench</module>
+    </modules>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <junit.version>5.12.2</junit.version>
+        <!-- SonarCloud analysis (same organization as the corrcalc-core repo) -->
+        <sonar.organization>tarvyn-analytics</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.projectKey>tarvyn-analytics_corrcalc-lib</sonar.projectKey>
+        <!-- S5778 expects a single throwing call in a lambda; it does not fit
+             JUnit assertThrows, where the calculator/preparer setup call (which
+             cannot throw the asserted exception) legitimately precedes the
+             throwing one. Exclude it from test sources only. -->
+        <sonar.issue.ignore.multicriteria>e1</sonar.issue.ignore.multicriteria>
+        <sonar.issue.ignore.multicriteria.e1.ruleKey>java:S5778</sonar.issue.ignore.multicriteria.e1.ruleKey>
+        <sonar.issue.ignore.multicriteria.e1.resourceKey>**/*Test.java</sonar.issue.ignore.multicriteria.e1.resourceKey>
+        <!-- Central Portal publishing behaviour (overridable per build) -->
+        <central.autoPublish>true</central.autoPublish>
+        <central.waitUntil>published</central.waitUntil>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.14.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.5.3</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>0.8.13</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>5.1.0.4751</version>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!-- Release publishing to Maven Central. Signs every deployed artifact
+             with the project GPG key and uploads through the Central Portal.
+             The reactor aggregates corrcalc-lib-parent (pom) and
+             corrcalc-lib-core (jar + sources + javadoc); bench is deploy-skipped.
+             Source/javadoc jars are attached by corrcalc-lib-core's own publish
+             profile, so a release build activates both: -Ppublish,release.
+             Kept separate from publish so PR validation (-Ppublish) never signs. -->
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.2.7</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <!-- non-interactive signing (CI + WSL) -->
+                                    <gpgArguments>
+                                        <arg>--pinentry-mode</arg>
+                                        <arg>loopback</arg>
+                                    </gpgArguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.11.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                            <!-- CI publishes automatically; a local release build can
+                                 pass -Dcentral.autoPublish=false to stage for review. -->
+                            <autoPublish>${central.autoPublish}</autoPublish>
+                            <waitUntil>${central.waitUntil}</waitUntil>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>

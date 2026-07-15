@@ -1,0 +1,19 @@
+target/
+*.class
+*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# OS
+.DS_Store
+Thumbs.db
+dependency-reduced-pom.xml
+
+# Local agent scratch memory (per-agent notes, not a library deliverable)
+.claude/agent-memory/
