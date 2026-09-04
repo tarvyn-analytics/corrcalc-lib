@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.github.tarvyn-analytics.corrcalc</groupId>
     <artifactId>corrcalc-lib-parent</artifactId>
-    <version>1.2.2</version>
+    <version>1.3.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>corrcalc lib parent</name>
     <description>Aggregator and parent for the corrcalc library and its benchmarks.
