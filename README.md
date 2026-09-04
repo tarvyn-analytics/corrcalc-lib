@@ -102,9 +102,13 @@ its accuracy guarantee holds only inside that domain:
   sampling frequency; never mix frequencies (e.g. daily and intraday bars) into one
   engine. Combine timescales downstream by blending two engines' matrices, not by
   interleaving ticks.
-- **Finite inputs only.** No `NaN`/`Infinity` in a bar (use the `prep` package to
-  clean raw data first). A variable that is **constant over the window** has zero
-  variance, so its whole row/column — diagonal included — is reported as `NaN`.
+- **Non-finite values are tolerated, not required.** Cleaning raw data with the
+  `prep` package first is still recommended, but a `NaN`/`Infinity` in a bar is
+  accepted: it makes that variable **undefined** — its whole row/column, diagonal
+  included, reads `NaN` — for as long as the value stays in the window, then the
+  variable is defined again, matching a fresh batch recompute, once the window is
+  finite again. A variable that is **constant over the window** has zero variance
+  and is reported the same way (whole row/column `NaN`).
 - **Window ≥ 2**, and `returns.length` must equal the variable count every bar.
 - **Not thread-safe.** A single engine instance is single-writer; drive it from
   one ingest thread.

@@ -27,6 +27,14 @@ import java.util.Arrays;
  * buffer is a circular {@code double[window * n]} of the last (up to)
  * {@code window} bars, column-major within each slot (variable-major), so the
  * oldest bar can be read back for the rank-one "remove" half of the slide.
+ * <p>
+ * <b>Non-finite entries.</b> {@code nanInWindow[i]} counts how many of variable
+ * {@code i}'s current window entries are {@code NaN}/{@code Infinity}; while it is
+ * positive, {@code i}'s row/column is reported {@code NaN}, exactly like the
+ * zero-variance rule. Non-finite values are never folded into {@code sx}/{@code sxx}/
+ * {@code sxy} (see {@link #accumulate(int, double)}), so those sums always hold only
+ * finite contributions and are exact again the moment a variable's spell drains out
+ * of the window.
  */
 abstract class AbstractRollingPearsonEngine implements RollingCorrelationEngine {
 
@@ -40,6 +48,7 @@ abstract class AbstractRollingPearsonEngine implements RollingCorrelationEngine 
     private final double[] sx;
     private final double[] sxx;
     private final double[] sxy; // flat upper-triangular, index via pairIndex
+    private final int[] nanInWindow; // per-variable count of non-finite entries currently in the window
 
     private int count; // bars accumulated since the last reset, capped at window
     private int writeSlot; // next circular-buffer slot to write
@@ -73,6 +82,7 @@ abstract class AbstractRollingPearsonEngine implements RollingCorrelationEngine 
         this.sx = new double[n];
         this.sxx = new double[n];
         this.sxy = new double[pairCount(n)];
+        this.nanInWindow = new int[n];
     }
 
     @Override
@@ -98,6 +108,7 @@ abstract class AbstractRollingPearsonEngine implements RollingCorrelationEngine 
         Arrays.fill(sx, 0.0);
         Arrays.fill(sxx, 0.0);
         Arrays.fill(sxy, 0.0);
+        Arrays.fill(nanInWindow, 0);
         count = 0;
         writeSlot = 0;
         updatesSinceEmit = 0;
@@ -132,37 +143,48 @@ abstract class AbstractRollingPearsonEngine implements RollingCorrelationEngine 
     }
 
     private void removeOldest() {
-        int base = writeSlot * n;
-        for (int i = 0; i < n; i++) {
-            double xi = history[base + i];
-            sx[i] -= xi;
-            sxx[i] -= xi * xi;
-        }
-        int idx = 0;
-        for (int i = 0; i < n; i++) {
-            double xi = history[base + i];
-            for (int j = i + 1; j < n; j++) {
-                sxy[idx++] -= xi * history[base + j];
-            }
-        }
+        accumulate(writeSlot * n, -1.0);
     }
 
     private void addNewest(double[] returns) {
         int base = writeSlot * n;
+        System.arraycopy(returns, 0, history, base, n);
+        accumulate(base, 1.0);
+        writeSlot = (writeSlot + 1) % window;
+    }
+
+    /**
+     * Folds (sign {@code +1.0}) or unfolds (sign {@code -1.0}) the window slot
+     * at {@code base} into the running sums; add and remove are mirror images
+     * of each other by construction, since {@code sx[i] += sign * xi} is
+     * bit-identical to {@code sx[i] -= xi} for {@code sign == -1.0} (negation
+     * is exact). A non-finite {@code xi} is never folded into {@code sx}/
+     * {@code sxx}, only counted in {@link #nanInWindow}; a pair sum only sees
+     * {@code xi * xj} when both variables are finite at this slot. Skipping is
+     * exact — the running sums are only ever exposed for a variable/pair while
+     * every entry that fed them was finite.
+     */
+    private void accumulate(int base, double sign) {
         for (int i = 0; i < n; i++) {
-            double xi = returns[i];
-            history[base + i] = xi;
-            sx[i] += xi;
-            sxx[i] += xi * xi;
+            double xi = history[base + i];
+            if (Double.isFinite(xi)) {
+                sx[i] += sign * xi;
+                sxx[i] += sign * xi * xi;
+            } else {
+                nanInWindow[i] += sign > 0 ? 1 : -1;
+            }
         }
         int idx = 0;
         for (int i = 0; i < n; i++) {
-            double xi = returns[i];
+            double xi = history[base + i];
+            boolean xiFinite = Double.isFinite(xi);
             for (int j = i + 1; j < n; j++) {
-                sxy[idx++] += xi * returns[j];
+                if (xiFinite && Double.isFinite(history[base + j])) {
+                    sxy[idx] += sign * xi * history[base + j];
+                }
+                idx++;
             }
         }
-        writeSlot = (writeSlot + 1) % window;
     }
 
     /** Assembles the current snapshot matrix and notifies the listener. */
@@ -172,7 +194,7 @@ abstract class AbstractRollingPearsonEngine implements RollingCorrelationEngine 
         double[] va = new double[n];
         for (int i = 0; i < n; i++) {
             double mx = sx[i] / w;
-            va[i] = sxx[i] - w * mx * mx;
+            va[i] = nanInWindow[i] > 0 ? Double.NaN : sxx[i] - w * mx * mx;
         }
         for (int i = 0; i < n; i++) {
             matrix[i * n + i] = va[i] > 0 ? 1.0 : Double.NaN;
@@ -182,7 +204,7 @@ abstract class AbstractRollingPearsonEngine implements RollingCorrelationEngine 
             double mxi = sx[i] / w;
             for (int j = i + 1; j < n; j++) {
                 double r;
-                if (va[i] <= 0 || va[j] <= 0) {
+                if (!(va[i] > 0) || !(va[j] > 0)) {
                     r = Double.NaN;
                 } else {
                     double mxj = sx[j] / w;

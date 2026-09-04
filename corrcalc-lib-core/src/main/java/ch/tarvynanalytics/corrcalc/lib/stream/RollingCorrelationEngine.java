@@ -31,9 +31,14 @@ import java.time.Instant;
  * <p>
  * <b>Input contract — feed returns, not levels.</b> Each value in a bar must be a
  * per-bar <b>return</b> (for example {@code log(close / prevClose)}), i.e. a series
- * fluctuating around approximately zero, and must be <b>finite</b> (no {@code NaN}
- * or {@code Infinity} — clean raw data with the {@code prep} package first, exactly
- * as for the batch {@code CorrelationCalculator}). The rolling variance is computed
+ * fluctuating around approximately zero. Cleaning raw data with the {@code prep}
+ * package first, exactly as for the batch {@code CorrelationCalculator}, is
+ * recommended but not required: a non-finite ({@code NaN}/{@code Infinity}) value
+ * is accepted, and simply makes the variable it belongs to <b>undefined</b> — its
+ * entire row and column, diagonal included, read {@code NaN} — for as long as that
+ * value remains inside the window; every other variable and pair is unaffected. The
+ * variable becomes defined again, matching a fresh batch recompute, as soon as the
+ * window holds only finite values for it once more. The rolling variance is computed
  * from running sums as {@code Sxx − W·mean²}; that subtraction is numerically exact
  * while the mean is small relative to the spread, but loses precision as the mean
  * moves away from zero — the relative error per coefficient is on the order of
@@ -44,8 +49,8 @@ import java.time.Instant;
  * pair and keeps the result bit-for-bit consistent with the batch Pearson over the
  * same window. A variable that is <b>constant over the window</b> has zero variance,
  * so its entire row and column — including the diagonal — are reported as
- * {@code NaN}. The window must be {@code >= 2}, and every bar's length must equal
- * the variable count.
+ * {@code NaN}, the same as an undefined (non-finite-tainted) variable. The window
+ * must be {@code >= 2}, and every bar's length must equal the variable count.
  */
 public interface RollingCorrelationEngine {
 
